@@ -1,0 +1,21 @@
+{
+	auto_https disable_redirects
+	default_sni {$FORLAN_SUPPORT_HOST}
+	skip_install_trust
+}
+
+https://{$FORLAN_SUPPORT_HOST}:24443 {
+	tls internal
+	encode zstd gzip
+	@admin_page path /admin /admin/*
+	respond @admin_page 404
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
+		-Server
+	}
+	reverse_proxy support-api:8080
+}

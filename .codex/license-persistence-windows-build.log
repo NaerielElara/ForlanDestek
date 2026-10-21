@@ -1,0 +1,4 @@
+warning: patch for the non root package will be ignored, specify patch at the workspace root:
+package:   D:\D\Fordeskgpt\libs\hbb_common\Cargo.toml
+workspace: D:\D\Fordeskgpt\Cargo.toml
+error: cannot specify features for packages outside of workspace

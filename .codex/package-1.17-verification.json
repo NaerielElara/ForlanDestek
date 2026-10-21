@@ -1,0 +1,15 @@
+{
+  "file": "ForlanDestek-1.17.0-portable.exe",
+  "bytes": 26262016,
+  "sha256": "390f25ee3fe8310c001b0117dc65636b9d9a37e8d2df525f25632b28fdd5cf4c",
+  "verifiedPayloadFiles": 106,
+  "embeddedArchiveMatches": true,
+  "connectionSoundAbsent": true,
+  "payloadHashes": {
+    "ForlanDestek.exe": "59f542dd5e4e737a1134cc01bced76b5c10e4ecd61eec034c5e8986609ea7713",
+    "librustdesk.dll": "bba7c07c738ecbcae5d1d811eadb8cb1b441a60b7b379bff28830e8da518b76f",
+    "flutter_windows.dll": "295d3767a5e5c4017f4877e67a4a8926178ecdfbb1196c3bd21ec5f5097f5ed3",
+    "data/app.so": "c1c7d53b1f048b268df66a651ac1bc3b16aa9f411b380ee7e732bf7e24b22607",
+    "data/flutter_assets/assets/forlan-message.wav": "c571e38f49336de3dd712b511cb5764536b571534dea93e1dd92b7b6e60c0cd7"
+  }
+}

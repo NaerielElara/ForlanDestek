@@ -1,0 +1,15 @@
+known local: C:\Users\o\AppData\Local
+env local: Ok("C:\\Users\\o\\AppData\\Local")
+file canonical Ok("\\\\?\\C:\\Users\\o\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\LocalCache\\Local\\forlandestek\\ForlanDestek.exe")
+owned cache paths Ok(["\\\\?\\C:\\Users\\o\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\LocalCache\\Local\\forlandestek", "C:\\Users\\o\\AppData\\Local\\forlandestek"])
+owned profile paths Ok(["\\\\?\\C:\\Users\\o\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\LocalCache\\Roaming\\ForlanDestek", "C:\\Users\\o\\AppData\\Roaming\\ForlanDestek"])
+ancestor C:\Users\o\AppData\Local\forlandestek attrs Ok(16) canonical Ok("\\\\?\\C:\\Users\\o\\AppData\\Local\\forlandestek")
+ancestor C:\Users\o\AppData\Local attrs Ok(16) canonical Ok("\\\\?\\C:\\Users\\o\\AppData\\Local")
+ancestor C:\Users\o\AppData attrs Ok(16) canonical Ok("\\\\?\\C:\\Users\\o\\AppData")
+ancestor C:\Users\o attrs Ok(16) canonical Ok("\\\\?\\C:\\Users\\o")
+ancestor C:\Users attrs Ok(17) canonical Ok("\\\\?\\C:\\Users")
+ancestor C:\ attrs Ok(22) canonical Ok("\\\\?\\C:\\")
+pid 0 query 1 image D:\D\Fordeskgpt\.codex\forlan-path-probe.exe
+pid 0 package rc 15700 name 
+pid 6960 query 1 image C:\Users\o\AppData\Local\Packages\OpenAI.Codex_2p2nqsd0c76g0\LocalCache\Local\forlandestek\ForlanDestek.exe
+pid 6960 package rc 15700 name 

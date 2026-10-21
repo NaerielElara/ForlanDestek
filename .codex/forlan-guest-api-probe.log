@@ -1,0 +1,6 @@
+native_tls_status=200 OK
+native_signature_valid=true
+permit_matches_session=true
+permit_future=true
+premium=false
+lease_ended_status=200 OK

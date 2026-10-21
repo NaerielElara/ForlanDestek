@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light">
+  <title>Forlan Destek · Lisans Merkezi</title>
+  <link rel="stylesheet" href="/admin/admin.css">
+  <script src="/admin/admin.js" defer></script>
+</head>
+<body>
+  <section id="login-screen" class="login-screen">
+    <div class="login-decoration" aria-hidden="true"><span></span><span></span><span></span></div>
+    <main class="login-card">
+      <a class="brand login-brand" href="#" aria-label="Forlan Destek"><span class="brand-mark">F</span><span><strong>FORLAN</strong><small>DESTEK YÖNETİMİ</small></span></a>
+      <p class="eyebrow">YEREL YÖNETİM PANELİ</p>
+      <h1>Tekrar hoş geldiniz</h1>
+      <p class="login-copy">Lisansları ve yetkili hesapları yönetmek için yönetici hesabınızla giriş yapın.</p>
+      <form id="login-form" class="form-stack">
+        <label>Kullanıcı adı<input name="username" autocomplete="username" required maxlength="128" placeholder="Yönetici kullanıcı adı"></label>
+        <label>Parola<div class="password-field"><input id="login-password" name="password" type="password" autocomplete="current-password" required maxlength="256" placeholder="Parolanız"><button class="password-toggle" type="button" data-password-toggle data-target="login-password" aria-controls="login-password" aria-pressed="false">Göster</button></div></label>
+        <button class="primary full-width" type="submit">Güvenli giriş <span aria-hidden="true">→</span></button>
+      </form>
+      <div class="login-foot"><span class="status-dot"></span> Bu yönetim paneli yalnızca sunucu bilgisayarından kullanılabilir.</div>
+    </main>
+    <footer class="login-footer">FORLAN DESTEK <span>·</span> LİSANS MERKEZİ</footer>
+  </section>
+
+  <div class="app-shell" id="app-shell" hidden>
+    <aside class="sidebar">
+      <a class="brand" href="#" aria-label="Forlan Destek yönetim ana sayfası"><span class="brand-mark">F</span><span><strong>FORLAN</strong><small>DESTEK YÖNETİMİ</small></span></a>
+      <div class="sidebar-caption">ÇALIŞMA ALANI</div>
+      <nav class="main-nav" aria-label="Ana menü">
+        <button class="nav-item active" type="button" data-view="dashboard" aria-current="page"><span class="nav-icon">⌂</span><span>Genel bakış</span></button>
+        <button class="nav-item" type="button" data-view="licenses"><span class="nav-icon">▤</span><span>Lisanslar</span><span class="nav-count" id="nav-license-count">0</span></button>
+        <button class="nav-item" type="button" data-view="accounts"><span class="nav-icon">♙</span><span>Firmalar ve hesaplar</span></button>
+        <button class="nav-item" type="button" data-view="audit"><span class="nav-icon">◷</span><span>İşlem geçmişi</span></button>
+      </nav>
+      <div class="sidebar-bottom"><div class="local-status"><span class="status-dot"></span><div><strong>Yerel yönetim</strong><small>Sunucu bilgisayarında</small></div></div><p>Lisans kodları yalnızca bu yönetim panelinde görüntülenir.</p></div>
+    </aside>
+
+    <main class="main-shell">
+      <header class="topbar">
+        <div class="breadcrumbs"><span>FORLAN DESTEK</span><span class="crumb-divider">/</span><strong id="page-title">Genel bakış</strong></div>
+        <div class="topbar-actions">
+          <button id="refresh" class="icon-button" type="button" title="Verileri yenile"><span aria-hidden="true">↻</span><span>Yenile</span></button>
+          <div class="identity-chip"><span class="avatar" id="identity-avatar">Y</span><span id="identity">Yönetici</span></div>
+          <button id="logout" class="logout-button" type="button">Oturumu kapat</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <section id="view-dashboard" class="view-page">
+          <div class="page-heading"><div><p class="eyebrow">YÖNETİM MERKEZİ</p><h1>Lisanslarınız, tek yerde.</h1><p class="page-subtitle">Lisans durumunu, kullanım haklarını ve cihazları buradan yönetin.</p></div><button class="primary" type="button" data-open-create-license><span aria-hidden="true">＋</span> Yeni lisans</button></div>
+          <div class="stats-grid">
+            <article class="stat-card"><div class="stat-icon blue">▤</div><div><p>Toplam lisans</p><strong id="stat-total">0</strong><small id="stat-total-note">Kayıtlı tüm lisanslar</small></div></article>
+            <article class="stat-card"><div class="stat-icon green">✓</div><div><p>Geçerli lisans</p><strong id="stat-active">0</strong><small>Şu anda kullanılabilir</small></div></article>
+            <article class="stat-card"><div class="stat-icon amber">◷</div><div><p>Yakında sona eriyor</p><strong id="stat-expiring">0</strong><small>Önümüzdeki 14 gün içinde</small></div></article>
+            <article class="stat-card"><div class="stat-icon violet">▣</div><div><p>Etkin cihaz</p><strong id="stat-devices">0</strong><small>Toplam cihaz kullanımı</small></div></article>
+          </div>
+          <div class="dashboard-grid">
+            <section class="surface recent-surface"><div class="surface-heading"><div><p class="eyebrow">SON EKLENENLER</p><h2>Son lisanslar</h2></div><button class="text-button" type="button" data-go-view="licenses">Tüm lisanslar <span aria-hidden="true">→</span></button></div><div id="recent-licenses" class="recent-list"></div></section>
+            <section class="surface guide-surface"><p class="eyebrow">HIZLI NOTLAR</p><h2>Lisans haklarını anlayın</h2>
+              <div class="guide-row"><span class="guide-number">01</span><p><strong>Destek hakkı lisansa özeldir.</strong> Aynı firmaya ait kodların hakları birbirinden bağımsızdır.</p></div>
+              <div class="guide-row"><span class="guide-number">02</span><p><strong>Cihaz sınırı 0 ise sınırsızdır.</strong> Kayıtlı cihazları lisans ayrıntılarından inceleyin.</p></div>
+              <div class="guide-row"><span class="guide-number">03</span><p><strong>Kodu yenilemek eski kodu kapatır.</strong> Eski kodla açılmış oturumlar da geçersiz olur.</p></div>
+              <div class="guide-callout"><span aria-hidden="true">i</span><span>Deneme lisansı 1–90 gün için oluşturulur. Süresiz standart lisans için süre alanını boş bırakın.</span></div>
+            </section>
+          </div>
+          <section class="surface attention-surface"><div class="surface-heading"><div><p class="eyebrow">TAKİP GEREKTİRENLER</p><h2>Süresi yakında dolacak lisanslar</h2></div><span class="soft-badge" id="expiring-badge">0 lisans</span></div><div id="expiring-list" class="expiring-list"></div></section>
+        </section>
+
+        <section id="view-licenses" class="view-page" hidden>
+          <div class="page-heading"><div><p class="eyebrow">LİSANS YÖNETİMİ</p><h1>Lisanslar</h1><p class="page-subtitle">Kodları, erişim haklarını ve cihaz durumlarını yönetin.</p></div><button class="primary" type="button" data-open-create-license><span aria-hidden="true">＋</span> Yeni lisans</button></div>
+          <div class="surface list-surface"><div class="list-toolbar">
+            <label class="search-box"><span aria-hidden="true">⌕</span><input id="license-search" type="search" placeholder="Firma adı veya lisans kodu ara" autocomplete="off"></label>
+            <label class="select-filter"><span>Durum</span><select id="license-filter"><option value="all">Tüm lisanslar</option><option value="active">Geçerli</option><option value="expiring">Yakında dolacak</option><option value="expired">Süresi dolmuş</option><option value="revoked">İptal edilmiş</option><option value="archived">Arşivlenmiş</option></select></label>
+            <span class="result-count" id="license-result-count"></span>
+          </div><div id="license-table" class="table-scroll"></div></div>
+        </section>
+
+        <section id="view-accounts" class="view-page" hidden>
+          <div class="page-heading"><div><p class="eyebrow">FİRMA VE EKİP</p><h1>Hesaplar</h1><p class="page-subtitle">Firma kayıtlarını ve yönetici/teknisyen erişimini yönetin.</p></div><button class="secondary-button" id="open-create-account" type="button"><span aria-hidden="true">＋</span> Yetkili hesabı ekle</button></div>
+          <div class="surface list-surface"><div class="list-toolbar">
+            <label class="search-box"><span aria-hidden="true">⌕</span><input id="account-search" type="search" placeholder="Firma, kullanıcı adı veya rol ara" autocomplete="off"></label>
+            <label class="check-filter"><input id="show-archived-accounts" type="checkbox"> Arşivlenenleri göster</label><span class="result-count" id="account-result-count"></span>
+          </div><div id="account-table" class="table-scroll"></div></div>
+        </section>
+
+        <section id="view-audit" class="view-page" hidden>
+          <div class="page-heading"><div><p class="eyebrow">GÜVENLİK VE İZLENEBİLİRLİK</p><h1>İşlem geçmişi</h1><p class="page-subtitle">Son 500 yönetim işlemi. Parolalar ve lisans kodları bu kayıtta tutulmaz.</p></div></div>
+          <div class="surface list-surface"><div class="list-toolbar"><label class="search-box"><span aria-hidden="true">⌕</span><input id="audit-search" type="search" placeholder="İşlem, kullanıcı veya kayıt ara" autocomplete="off"></label><span class="result-count" id="audit-result-count"></span></div><div id="audit-table" class="table-scroll"></div></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <section id="notice" class="toast" role="status" aria-live="polite" hidden></section>
+
+  <dialog id="create-license-dialog" class="modal">
+    <form id="license-form" class="modal-form">
+      <div class="modal-heading"><div><p class="eyebrow">YENİ LİSANS</p><h2>Firma lisansı oluştur</h2><p class="modal-subtitle">Firma için yeni bir giriş kodu üretin.</p></div><button class="close-button" type="button" data-close-dialog aria-label="Kapat">×</button></div>
+      <div class="form-grid">
+        <label class="span-2">Mevcut firma<select name="account_id" id="customer-select"><option value="">Yeni firma oluştur</option></select><small>Mevcut firmayı seçerseniz yeni hesap açılmadan bu firmaya ek lisans oluşturulur.</small></label>
+        <label class="span-2" id="firm-name-label">Yeni firma adı<input name="display_name" id="firm-name" maxlength="160" placeholder="Ör. Örnek Teknoloji Ltd."></label>
+        <label>Lisans türü<select name="license_kind" id="license-kind"><option value="standard">Standart lisans</option><option value="trial">Deneme lisansı</option></select></label>
+        <label>Süre (gün)<input name="duration_days" id="license-duration" type="number" min="1" max="36500" placeholder="Standart lisans süresiz"><small id="duration-hint">Boş bırakırsanız lisans süresiz olur.</small></label>
+        <label>Cihaz sayısı<input name="device_limit" type="number" min="0" max="1000" value="1" required><small>0 = sınırsız cihaz.</small></label>
+        <div class="entitlement-card span-2"><label class="toggle-row"><input name="support_enabled" type="checkbox"><span class="toggle-visual"></span><span class="toggle-copy"><strong>Destek hizmetini dahil et</strong><small>Bu lisansla firma destek kaydı açabilir ve mesajlaşabilir.</small></span></label></div>
+      </div>
+      <div class="modal-actions"><button class="secondary-button" type="button" data-close-dialog>Vazgeç</button><button class="primary" type="submit">Lisans kodu üret <span aria-hidden="true">→</span></button></div>
+    </form>
+  </dialog>
+
+  <dialog id="create-account-dialog" class="modal compact-modal">
+    <form id="account-form" class="modal-form">
+      <div class="modal-heading"><div><p class="eyebrow">EKİP ERİŞİMİ</p><h2>Yetkili hesabı ekle</h2><p class="modal-subtitle">Teknisyen veya yönetici hesabı tanımlayın.</p></div><button class="close-button" type="button" data-close-dialog aria-label="Kapat">×</button></div>
+      <div class="form-stack"><label>Ad soyad<input name="display_name" required maxlength="160" placeholder="Ad soyad"></label><label>Kullanıcı adı<input name="username" required minlength="3" maxlength="128" autocomplete="off" placeholder="kullanici.adi"></label><label>İlk parola<div class="password-field"><input id="new-account-password" name="password" type="password" required minlength="6" maxlength="256" autocomplete="new-password" placeholder="En az 6 karakter"><button class="password-toggle" type="button" data-password-toggle data-target="new-account-password" aria-controls="new-account-password" aria-pressed="false">Göster</button></div><small>En az 6 karakter. Oluşturulduktan sonra parola hash’li saklanır.</small></label><label>Rol<select name="role"><option value="technician">Teknisyen</option><option value="admin">Yönetici</option></select></label></div>
+      <div class="modal-actions"><button class="secondary-button" type="button" data-close-dialog>Vazgeç</button><button class="primary" type="submit">Hesabı oluştur</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="change-password-dialog" class="modal compact-modal">
+    <form id="change-password-form" class="modal-form">
+      <div class="modal-heading"><div><p class="eyebrow">HESAP GÜVENLİĞİ</p><h2>Parolayı güncelle</h2><p class="modal-subtitle"><span id="password-account-name"></span> hesabı için yeni parola belirleyin.</p></div><button class="close-button" type="button" data-close-dialog aria-label="Kapat">×</button></div>
+      <p class="inline-help">Kayıtlı parolalar görüntülenemez; sistemde hash’li saklanırlar. Burada yeni parola belirleyebilirsiniz.</p>
+      <div class="form-stack">
+        <label id="current-password-wrap">Mevcut parolanız<div class="password-field"><input id="current-password" name="current_password" type="password" maxlength="256" autocomplete="current-password" placeholder="Mevcut parolanız"><button class="password-toggle" type="button" data-password-toggle data-target="current-password" aria-controls="current-password" aria-pressed="false">Göster</button></div></label>
+        <label>Yeni parola<div class="password-field"><input id="change-password-new" name="new_password" type="password" required minlength="6" maxlength="256" autocomplete="new-password" placeholder="En az 6 karakter"><button class="password-toggle" type="button" data-password-toggle data-target="change-password-new" aria-controls="change-password-new" aria-pressed="false">Göster</button></div></label>
+        <label>Yeni parola tekrar<div class="password-field"><input id="change-password-confirm" name="confirm_password" type="password" required minlength="6" maxlength="256" autocomplete="new-password" placeholder="Yeni parolayı tekrar girin"><button class="password-toggle" type="button" data-password-toggle data-target="change-password-confirm" aria-controls="change-password-confirm" aria-pressed="false">Göster</button></div></label>
+      </div>
+      <p id="password-error" class="form-error" role="alert" hidden></p>
+      <p id="password-session-note" class="inline-help">Güvenlik için yeni parola kaydedilince bu hesaba ait açık oturumlar kapatılır.</p>
+      <div class="modal-actions"><button class="secondary-button" type="button" data-close-dialog>Vazgeç</button><button class="primary" type="submit">Parolayı güncelle</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="license-detail-dialog" class="modal detail-modal">
+    <div class="modal-form">
+      <div class="modal-heading"><div><p class="eyebrow">LİSANS AYRINTISI <span id="detail-license-id"></span></p><h2 id="detail-firm-name">Firma lisansı</h2><p id="detail-subtitle" class="modal-subtitle"></p></div><button class="close-button" type="button" data-close-dialog aria-label="Kapat">×</button></div>
+      <div class="detail-code-card"><div><span class="field-caption">LİSANS KODU</span><code id="detail-code">—</code></div><div class="code-actions"><button id="copy-license-code" class="secondary-button small-button" type="button">Kodu kopyala</button><button id="rotate-license-code" class="ghost-button small-button" type="button">Kodu yenile</button></div></div>
+      <div class="detail-summary" id="detail-summary"></div>
+      <div class="detail-grid">
+        <form id="license-settings-form" class="detail-section"><div><p class="eyebrow">ERİŞİM HAKLARI</p><h3>Bu lisansın hakları</h3></div><label>Cihaz sınırı<input name="device_limit" type="number" min="0" max="1000" required><small>0 sınırsızdır. Düşürmek için önce gerekirse cihaz kaldırın.</small></label><label class="toggle-row"><input name="support_enabled" type="checkbox"><span class="toggle-visual"></span><span class="toggle-copy"><strong>Destek hizmeti dahil</strong><small>Değişiklik yalnızca bu lisansı etkiler.</small></span></label><button class="primary" type="submit">Hakları kaydet</button><button id="convert-trial" class="text-button convert-button" type="button" hidden>Standart lisansa dönüştür</button></form>
+        <form id="renew-form" class="detail-section"><div><p class="eyebrow">SÜRE YÖNETİMİ</p><h3>Lisansı uzat</h3></div><label>Uzatılacak süre (gün)<input name="duration_days" id="renew-duration" type="number" min="1" max="36500" placeholder="Standart lisansı süresiz yap"></label><p class="inline-help" id="renew-hint">Standart lisanslarda boş bırakmak lisansı süresiz yapar. Gün girerseniz mevcut bitiş tarihine eklenir.</p><button class="secondary-button" type="submit">Süreyi güncelle</button></form>
+      </div>
+      <div class="detail-tools"><button id="open-license-devices" class="secondary-button" type="button">Cihazları yönet <span id="detail-device-count"></span></button><div class="detail-danger-actions"><button id="toggle-license-archive" class="ghost-button" type="button">Arşivle</button><button id="revoke-license" class="danger-button" type="button">Lisansı iptal et</button><button id="delete-license" class="danger-link" type="button">Kalıcı sil</button></div></div>
+    </div>
+  </dialog>
+
+  <dialog id="devices-dialog" class="modal devices-modal">
+    <div class="modal-form"><div class="modal-heading"><div><p class="eyebrow">CİHAZ ENVANTERİ</p><h2 id="devices-heading">Lisans cihazları</h2><p class="modal-subtitle">Cihazı kaldırmak oturumunu kapatır ve kullanılan yeri boşaltır.</p></div><button class="close-button" type="button" data-close-dialog aria-label="Kapat">×</button></div><div id="devices-table" class="table-scroll"></div><div class="modal-actions"><button class="secondary-button" type="button" data-close-dialog>Kapat</button></div></div>
+  </dialog>
+
+  <dialog id="confirm-dialog" class="modal confirm-modal">
+    <form id="confirm-form" class="modal-form"><div class="modal-heading"><div><p class="eyebrow">İŞLEM ONAYI</p><h2 id="confirm-title">Devam edilsin mi?</h2></div><button class="close-button" type="button" data-confirm-cancel aria-label="Kapat">×</button></div>
+      <p id="confirm-message" class="confirm-message"></p><label id="confirm-word-wrap" hidden><span id="confirm-word-label">Onay metni</span><input id="confirm-word" autocomplete="off"></label><p id="confirm-error" class="form-error" role="alert" hidden></p>
+      <div class="modal-actions"><button class="secondary-button" type="button" data-confirm-cancel>Vazgeç</button><button id="confirm-accept" class="danger-button" type="submit">Onayla</button></div></form>
+  </dialog>
+</body>
+</html>

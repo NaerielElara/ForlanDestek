@@ -1,0 +1,6 @@
+{
+  "WindowsVersion": "windows-0.61.1",
+  "Rlib": "target\\release\\deps\\libwindows-01124bd3377a2b82.rlib",
+  "Features": "[\"Data\", \"Data_Xml\", \"Data_Xml_Dom\", \"Foundation\", \"UI\", \"UI_Notifications\", \"Win32\", \"Win32_Foundation\", \"Win32_Security\", \"Win32_Security_Authorization\", \"Win32_Security_Cryptography\", \"Win32_Storage\", \"Win32_Storage_FileSystem\", \"Win32_System\", \"Win32_System_Com\", \"Win32_System_Diagnostics\", \"Win32_System_Diagnostics_ToolHelp\", \"Win32_System_Environment\", \"Win32_System_IO\", \"Win32_System_Memory\", \"Win32_System_Ole\", \"Win32_System_Pipes\", \"Win32_System_Registry\", \"Win32_System_SystemInformation\", \"Win32_System_Threading\", \"Win32_System_Variant\", \"Win32_UI\", \"Win32_UI_Shell\", \"Win32_UI_WindowsAndMessaging\", \"default\", \"std\"]",
+  "Result": "dpapi_session_disk_round_trip=passed"
+}

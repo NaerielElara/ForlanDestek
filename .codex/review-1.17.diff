@@ -1,0 +1,218 @@
+--- Cargo.lock (baseline)
++++ Cargo.lock
+@@ -7087,7 +7087,7 @@
+ 
+ [[package]]
+ name = "rustdesk"
+-version = "1.16.0"
++version = "1.17.0"
+ dependencies = [
+  "android-wakelock",
+  "android_logger",
+@@ -7202,7 +7202,7 @@
+ 
+ [[package]]
+ name = "rustdesk-portable-packer"
+-version = "1.16.0"
++version = "1.17.0"
+ dependencies = [
+  "brotli",
+  "dirs 5.0.1",
+--- Cargo.toml (baseline)
++++ Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "rustdesk"
+-version = "1.16.0"
++version = "1.17.0"
+ authors = ["rustdesk <info@rustdesk.com>"]
+ edition = "2021"
+ build= "build.rs"
+@@ -142,10 +142,12 @@
+     "Win32_System_Environment",
+     "Win32_System_IO",
+     "Win32_System_Memory",
++    "Win32_System_Ole",
+     "Win32_System_Pipes",
+     "Win32_System_Registry",
+     "Win32_System_SystemInformation",
+     "Win32_System_Threading",
++    "Win32_System_Variant",
+     "Win32_UI_Shell",
+     "Win32_UI_WindowsAndMessaging",
+ ] }
+--- flutter\pubspec.yaml (baseline)
++++ flutter\pubspec.yaml
+@@ -16,7 +16,7 @@
+ # Read more about iOS versioning at
+ # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+ # 1.1.9-1 works for android, but for ios it becomes 1.1.91, need to set it to 1.1.9-a.1 for iOS, will get 1.1.9.1, but iOS store not allow 4 numbers
+-version: 1.16.0+78
++version: 1.17.0+79
+ 
+ environment:
+   sdk: '^3.1.0'
+--- src\core_main.rs (baseline)
++++ src\core_main.rs
+@@ -32,6 +32,12 @@
+ pub fn core_main() -> Option<Vec<String>> {
+     #[cfg(windows)]
+     crate::common::init_forlan_app_name();
++    #[cfg(windows)]
++    if crate::platform::windows::forlan_reset::handle_maintenance_command()
++        || !crate::platform::windows::forlan_reset::prepare_startup()
++    {
++        return None;
++    }
+     if !crate::common::global_init() {
+         return None;
+     }
+--- src\version.rs (baseline)
++++ src\version.rs
+@@ -1,3 +1,3 @@
+-pub const VERSION: &str = "1.16.0";
++pub const VERSION: &str = "1.17.0";
+ #[allow(dead_code)]
+-pub const BUILD_DATE: &str = "2026-10-12 09:27";
++pub const BUILD_DATE: &str = "2026-10-12 14:30";
+--- src\platform\windows.rs (baseline)
++++ src\platform\windows.rs
+@@ -100,6 +100,7 @@
+ mod installer_handoff;
+ mod installer_shell;
+ mod msi_registry;
++pub(crate) mod forlan_reset;
+ pub(crate) use acl::current_process_user_sid_string;
+ pub use acl::{
+     set_path_permission, set_path_permission_for_portable_service_shmem_dir,
+@@ -3416,6 +3417,9 @@
+     let (subkey, path, _, exe) = get_install_info();
+     let is_installed = std::fs::metadata(&exe).is_ok();
+     if !is_installed {
++        if app_name == "ForlanDestek" {
++            return forlan_reset::finish_portable_update();
++        }
+         bail!("{} is not installed.", &app_name);
+     }
+     let is_msi = is_msi_installed().ok();
+@@ -3526,7 +3530,7 @@
+     };
+ 
+     let filter = format!(" /FI \"PID ne {}\"", get_current_pid());
+-    let restore_service_cmd = if is_service_running {
++    let restore_service_cmd = if is_service_running || app_name == "ForlanDestek" {
+         format!("sc start {}", &app_name)
+     } else {
+         "".to_owned()
+@@ -3561,6 +3565,7 @@
+ chcp 65001
+ sc stop {app_name}
+ taskkill /F /IM {app_name}.exe{filter}
++{forlan_cleanup}
+ {reg_cmd}
+ {copy_exe}
+ {rename_exe}
+@@ -3571,6 +3576,7 @@
+ {sleep}
+     ",
+         app_name = app_name,
++        forlan_cleanup = forlan_reset::installed_cleanup_command(&src_exe, &path)?,
+         copy_exe = copy_exe_cmd(&src_exe, &exe, &path)?,
+         rename_exe = rename_exe_cmd(&src_exe, &path)?,
+         remove_meta_toml = remove_meta_toml_cmd(is_msi.unwrap_or(true), &path),
+@@ -3885,6 +3891,9 @@
+ // Used for auto update and manual update in the main window.
+ pub fn update_to(file: &str) -> ResultType<()> {
+     if file.ends_with(".exe") {
++        if forlan_reset::start_portable_update(file)? {
++            return Ok(());
++        }
+         let custom_client_staging_dir = get_custom_client_staging_dir();
+         if crate::is_custom_client() {
+             handle_custom_client_staging_dir_before_update(&custom_client_staging_dir)?;
+--- libs\portable\Cargo.toml (baseline)
++++ libs\portable\Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "rustdesk-portable-packer"
+-version = "1.16.0"
++version = "1.17.0"
+ edition = "2021"
+ description = "Forlan Destek Remote Desktop"
+ 
+@@ -22,6 +22,8 @@
+     "Win32",
+     "Win32_System",
+     "Win32_System_SystemInformation",
++    "Win32_System_Diagnostics_ToolHelp",
++    "Win32_System_Threading",
+ ] }
+ native-windows-gui = {version = "1.0", default-features = false, features = ["animation-timer", "image-decoder"]}
+ 
+--- libs\portable\src\main.rs (baseline)
++++ libs\portable\src\main.rs
+@@ -10,6 +10,8 @@
+ pub mod bin_reader;
+ #[cfg(windows)]
+ mod ui;
++#[cfg(windows)]
++mod forlan_refresh;
+ 
+ #[cfg(windows)]
+ const APP_METADATA: &[u8] = include_bytes!("../app_metadata.toml");
+@@ -178,6 +180,16 @@
+             *_ui = true;
+             ui::setup();
+         }
++        #[cfg(windows)]
++        if forlan_refresh::is_forlan(&reader.exe) {
++            if let Err(error) = forlan_refresh::clear_extraction(&dir) {
++                eprintln!("{error}");
++                return None;
++            }
++        } else {
++            std::fs::remove_dir_all(&dir).ok();
++        }
++        #[cfg(not(windows))]
+         std::fs::remove_dir_all(&dir).ok();
+     }
+     let mut metadata_paths = reader.package_paths.clone();
+@@ -245,6 +257,10 @@
+     }
+ 
+     cmd.env(APPNAME_RUNTIME_ENV_KEY, exe_name);
++    #[cfg(windows)]
++    if cmd.get_program().to_str().map(forlan_refresh::is_forlan).unwrap_or(false) {
++        cmd.env(forlan_refresh::LAUNCHER_ENV, &exe);
++    }
+     if use_null_stdio() {
+         cmd.stdin(Stdio::null())
+             .stdout(Stdio::null())
+@@ -289,10 +305,16 @@
+ 
+     let mut ui = false;
+     let reader = BinaryReader::new()?;
++    #[cfg(windows)]
++    let forlan = forlan_refresh::is_forlan(&reader.exe);
++    #[cfg(windows)]
++    let refresh_forlan = forlan_refresh::prepare(&reader.exe, &args)?;
++    #[cfg(not(windows))]
++    let refresh_forlan = false;
+     if let Some(exe) = setup(
+         reader,
+         None,
+-        click_setup || args.contains(&"--silent-install".to_owned()),
++        click_setup || args.contains(&"--silent-install".to_owned()) || refresh_forlan,
+         &args,
+         &mut ui,
+     ) {
+@@ -302,6 +324,9 @@
+             args = vec!["--quick_support".to_owned()];
+         }
+         execute(exe, args, ui);
++    } else {
++        #[cfg(windows)]
++        if forlan { return Err("Forlan package could not be prepared".to_owned()); }
+     }
+     Ok(())
+ }

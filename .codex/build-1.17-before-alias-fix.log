@@ -1,0 +1,676 @@
+features: ['hwcodec', 'vram', 'flutter']
+False
+warning: patch for the non root package will be ignored, specify patch at the workspace root:
+package:   D:\D\Fordeskgpt\libs\hbb_common\Cargo.toml
+workspace: D:\D\Fordeskgpt\Cargo.toml
+warning: use of deprecated associated function `core::num::<impl u32>::max_value`: replaced by the `MAX` associated constant on this type
+   --> libs\hbb_common\src\lib.rs:192:41
+    |
+192 |         let tm = (number >> 17) & (u32::max_value() as u128);
+    |                                         ^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> libs\hbb_common\src\lib.rs:365:22
+    |
+365 |                     .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
+    |                      ^^^^^^^^^^^^
+    |
+help: replace the use of the deprecated method
+    |
+365 -                     .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
+365 +                     .try_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
+    |
+
+warning: `hbb_common` (lib) generated 2 warnings (run `cargo fix --lib -p hbb_common` to apply 1 suggestion)
+warning: linker stdout: LINK : warning LNK4217: 'DeviceClose' sembolü ('win_virtual_display.lib(615137678e287058-IddController.o)' içinde tanımlanan), 'dylib_virtual_display.dylib_virtual_display.82ac739312ed175f-cgu.0.rcgu.o' tarafından 'close_device' işlevinde içeri aktarıldı␍
+         LINK : warning LNK4217: 'DeviceCreate' sembolü ('win_virtual_display.lib(615137678e287058-IddController.o)' içinde tanımlanan), 'dylib_virtual_display.dylib_virtual_display.82ac739312ed175f-cgu.0.rcgu.o' tarafından 'create_device' işlevinde içeri aktarıldı␍
+         LINK : warning LNK4217: 'InstallUpdate' sembolü ('win_virtual_display.lib(615137678e287058-IddController.o)' içinde tanımlanan), 'dylib_virtual_display.dylib_virtual_display.82ac739312ed175f-cgu.0.rcgu.o' tarafından 'install_update_driver' işlevinde içeri aktarıldı
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `dylib_virtual_display` (lib) generated 1 warning
+    Finished `release` profile [optimized] target(s) in 2.26s
+warning: patch for the non root package will be ignored, specify patch at the workspace root:
+package:   D:\D\Fordeskgpt\libs\hbb_common\Cargo.toml
+workspace: D:\D\Fordeskgpt\Cargo.toml
+warning: use of deprecated associated function `core::num::<impl u32>::max_value`: replaced by the `MAX` associated constant on this type
+   --> libs\hbb_common\src\lib.rs:192:41
+    |
+192 |         let tm = (number >> 17) & (u32::max_value() as u128);
+    |                                         ^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> libs\hbb_common\src\lib.rs:365:22
+    |
+365 |                     .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
+    |                      ^^^^^^^^^^^^
+    |
+help: replace the use of the deprecated method
+    |
+365 -                     .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
+365 +                     .try_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
+    |
+
+warning: `hbb_common` (lib) generated 2 warnings (run `cargo fix --lib -p hbb_common` to apply 1 suggestion)
+warning: direct cast of function item into an integer
+  --> libs\base\src\platform\mod.rs:80:62
+   |
+80 |         libc::signal(libc::SIGSEGV, breakdown_signal_handler as _);
+   |                                                              ^^^^
+   |
+   = note: `#[warn(function_casts_as_integer)]` on by default
+help: first cast to a pointer `as *const ()`
+   |
+80 |         libc::signal(libc::SIGSEGV, breakdown_signal_handler as *const () as _);
+   |                                                              ++++++++++++
+
+warning: `base` (lib) generated 1 warning (run `cargo fix --lib -p base` to apply 1 suggestion)
+warning: `hbb_common` (lib) generated 2 warnings (2 duplicates)
+warning: linker stdout: liblibsodium_sys-b0e393ff5d91f1a6.rlib(codecs.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(codecs.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(crypto_generichash.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(crypto_generichash.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(crypto_scalarmult.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(crypto_scalarmult.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(secretstream_xchacha20poly1305.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(secretstream_xchacha20poly1305.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(onetimeauth_poly1305.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(onetimeauth_poly1305.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(box_curve25519xsalsa20poly1305.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(box_curve25519xsalsa20poly1305.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(crypto_box_easy.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(crypto_box_easy.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(core.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(core.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(hash_sha256_cp.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(hash_sha256_cp.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(hash_sha512_cp.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(hash_sha512_cp.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(sign_ed25519.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(sign_ed25519.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(aead_aes256gcm_aesni.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(aead_aes256gcm_aesni.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(randombytes.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(randombytes.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(version.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(version.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(scalarmult_curve25519.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(scalarmult_curve25519.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(crypto_kx.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(crypto_kx.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(kdf_blake2b.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(kdf_blake2b.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(aead_chacha20poly1305.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(aead_chacha20poly1305.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(aead_xchacha20poly1305.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(aead_xchacha20poly1305.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(keypair.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(keypair.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(sign.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(sign.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(open.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(open.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(pwhash_argon2i.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(pwhash_argon2i.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(stream_xchacha20.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(stream_xchacha20.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(crypto_box_seal.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(crypto_box_seal.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(crypto_secretbox_easy.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(crypto_secretbox_easy.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(shorthash_siphash24_ref.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(shorthash_siphash24_ref.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(auth_hmacsha256.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(auth_hmacsha256.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(auth_hmacsha512.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(auth_hmacsha512.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(auth_hmacsha512256.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(auth_hmacsha512256.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(utils.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(utils.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(verify.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(verify.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(pwhash_argon2id.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(pwhash_argon2id.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(pwhash_scryptsalsa208sha256.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(pwhash_scryptsalsa208sha256.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(stream_salsa20.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(stream_salsa20.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(stream_chacha20.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(stream_chacha20.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(stream_xsalsa20.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(stream_xsalsa20.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(generichash_blake2b.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(generichash_blake2b.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(core_hchacha20.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(core_hchacha20.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(poly1305_donna.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(poly1305_donna.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(core_hsalsa20_ref2.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(core_hsalsa20_ref2.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(secretbox_xsalsa20poly1305.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(secretbox_xsalsa20poly1305.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(crypto_box.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(crypto_box.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(runtime.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(runtime.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(argon2-core.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(argon2-core.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(randombytes_sysrandom.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(randombytes_sysrandom.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(x25519_ref10.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(x25519_ref10.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(ed25519_ref10.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(ed25519_ref10.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(argon2.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(argon2.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(argon2-encoding.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(argon2-encoding.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(crypto_scrypt-common.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(crypto_scrypt-common.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(scrypt_platform.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(scrypt_platform.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(salsa20_ref.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(salsa20_ref.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(salsa20_xmm6int-sse2.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(salsa20_xmm6int-sse2.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(salsa20_xmm6int-avx2.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(salsa20_xmm6int-avx2.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(chacha20_ref.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(chacha20_ref.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(chacha20_dolbeau-avx2.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(chacha20_dolbeau-avx2.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(chacha20_dolbeau-ssse3.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(chacha20_dolbeau-ssse3.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(blake2b-ref.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(blake2b-ref.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(argon2-fill-block-ref.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(argon2-fill-block-ref.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(argon2-fill-block-avx2.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(argon2-fill-block-avx2.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(argon2-fill-block-ssse3.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(argon2-fill-block-ssse3.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(blake2b-long.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(blake2b-long.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(pwhash_scryptsalsa208sha256_nosse.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(pwhash_scryptsalsa208sha256_nosse.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(pwhash_scryptsalsa208sha256_sse.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(pwhash_scryptsalsa208sha256_sse.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(core_salsa_ref.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(core_salsa_ref.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(blake2b-compress-ref.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(blake2b-compress-ref.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(blake2b-compress-ssse3.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(blake2b-compress-ssse3.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(blake2b-compress-sse41.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(blake2b-compress-sse41.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(blake2b-compress-avx2.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(blake2b-compress-avx2.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-b0e393ff5d91f1a6.rlib(pbkdf2-sha256.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-b0e393ff5d91f1a6.rlib(pbkdf2-sha256.obj)' ile veya 'D:\D\Fordeskgpt\target\release\build\rustdesk-fb4c60ebc64e3d54\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `rustdesk` (build script) generated 1 warning
+   Compiling rustdesk v1.17.0 (D:\D\Fordeskgpt)
+warning: unused import: `is_installed`
+  --> src\common.rs:40:69
+   |
+40 |     ui_interface::{get_api_server as ui_get_api_server, get_option, is_installed, set_option},
+   |                                                                     ^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `bail`
+  --> src\ui_cm_interface.rs:23:16
+   |
+23 |     allow_err, bail,
+   |                ^^^^
+
+warning: use of deprecated function `hbb_common::base64::encode`: Use Engine::encode
+   --> src\hbbs_http\sync.rs:188:52
+    |
+188 |                         hash = hbb_common::base64::encode(&res[..]);
+    |                                                    ^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+  --> src\rendezvous_mediator.rs:83:14
+   |
+83 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+   |              ^^^^^^^^^^^^
+   |
+help: replace the use of the deprecated method
+   |
+83 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+83 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+   |
+
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> src\rendezvous_mediator.rs:131:14
+    |
+131 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+    |              ^^^^^^^^^^^^
+    |
+help: replace the use of the deprecated method
+    |
+131 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+131 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+    |
+
+warning: variable does not need to be mutable
+   --> src\server\terminal_helper.rs:846:9
+    |
+846 |     let mut input_pipe = open_pipe(input_pipe_name, true)?;
+    |         ----^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> src\server\terminal_helper.rs:847:9
+    |
+847 |     let mut output_pipe = open_pipe(output_pipe_name, false)?;
+    |         ----^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> src\flutter_ffi.rs:1080:9
+     |
+1080 |     let mut map: HashMap<String, String> = serde_json::from_str(&json).unwrap_or(HashMap::new());
+     |         ----^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+  --> src\tray.rs:64:9
+   |
+64 |     let mut event_loop = EventLoopBuilder::new().build();
+   |         ----^^^^^^^^^^
+   |         |
+   |         help: remove this `mut`
+
+warning: constant `MOUSE_MOVE_PROTECTION_TIMEOUT` is never used
+   --> src\server\input_service.rs:633:7
+    |
+633 | const MOUSE_MOVE_PROTECTION_TIMEOUT: Duration = Duration::from_millis(1_000);
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: constant `MOUSE_ACTIVE_DISTANCE` is never used
+   --> src\server\input_service.rs:635:7
+    |
+635 | const MOUSE_ACTIVE_DISTANCE: i32 = 5;
+    |       ^^^^^^^^^^^^^^^^^^^^^
+
+warning: type alias `Children` is never used
+  --> src\ui_interface.rs:36:10
+   |
+36 | pub type Children = Arc<Mutex<(bool, HashMap<(String, String), Child>)>>;
+   |          ^^^^^^^^
+
+warning: method `message` is never used
+    --> src\ui_interface.rs:1070:12
+     |
+1069 | impl DeployResult {
+     | ----------------- method in this implementation
+1070 |     pub fn message(&self) -> String {
+     |            ^^^^^^^
+
+warning: function `create_http_client_async_with_url` is never used
+   --> src\hbbs_http\http_client.rs:260:14
+    |
+260 | pub async fn create_http_client_async_with_url(url: &str) -> AsyncClient {
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: module `pt_BR` should have a snake case name
+  --> src\lang.rs:36:5
+   |
+36 | mod pt_BR;
+   |     ^^^^^ help: convert the identifier to snake case: `pt_br`
+   |
+   = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: module `pt_PT` should have a snake case name
+  --> src\lang.rs:37:5
+   |
+37 | mod pt_PT;
+   |     ^^^^^ help: convert the identifier to snake case: `pt_pt`
+
+warning: linker stdout: liblibsodium_sys-6af8ae465930fbe9.rlib(codecs.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(codecs.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(core.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(core.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(crypto_generichash.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(crypto_generichash.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(crypto_scalarmult.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(crypto_scalarmult.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(hash_sha256_cp.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(hash_sha256_cp.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(hash_sha512_cp.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(hash_sha512_cp.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(sign_ed25519.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(sign_ed25519.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(aead_aes256gcm_aesni.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(aead_aes256gcm_aesni.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(randombytes.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(randombytes.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(secretstream_xchacha20poly1305.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(secretstream_xchacha20poly1305.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(utils.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(utils.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(auth_hmacsha256.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(auth_hmacsha256.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(auth_hmacsha512.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(auth_hmacsha512.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(auth_hmacsha512256.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(auth_hmacsha512256.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(version.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(version.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(verify.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(verify.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(scalarmult_curve25519.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(scalarmult_curve25519.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(onetimeauth_poly1305.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(onetimeauth_poly1305.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(crypto_kx.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(crypto_kx.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(kdf_blake2b.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(kdf_blake2b.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(aead_chacha20poly1305.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(aead_chacha20poly1305.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(aead_xchacha20poly1305.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(aead_xchacha20poly1305.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(box_curve25519xsalsa20poly1305.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(box_curve25519xsalsa20poly1305.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(crypto_box_easy.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(crypto_box_easy.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(keypair.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(keypair.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(sign.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(sign.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(open.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(open.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(pwhash_argon2id.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(pwhash_argon2id.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(pwhash_scryptsalsa208sha256.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(pwhash_scryptsalsa208sha256.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(pwhash_argon2i.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(pwhash_argon2i.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(stream_salsa20.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(stream_salsa20.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(stream_chacha20.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(stream_chacha20.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(stream_xsalsa20.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(stream_xsalsa20.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(stream_xchacha20.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(stream_xchacha20.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(crypto_box_seal.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(crypto_box_seal.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(crypto_secretbox_easy.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(crypto_secretbox_easy.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(shorthash_siphash24_ref.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(shorthash_siphash24_ref.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(runtime.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(runtime.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(generichash_blake2b.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(generichash_blake2b.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(argon2-core.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(argon2-core.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(randombytes_sysrandom.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(randombytes_sysrandom.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(core_hchacha20.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(core_hchacha20.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(x25519_ref10.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(x25519_ref10.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(poly1305_donna.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(poly1305_donna.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(core_hsalsa20_ref2.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(core_hsalsa20_ref2.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(secretbox_xsalsa20poly1305.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(secretbox_xsalsa20poly1305.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(crypto_box.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(crypto_box.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(ed25519_ref10.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(ed25519_ref10.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(argon2.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(argon2.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(crypto_scrypt-common.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(crypto_scrypt-common.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(scrypt_platform.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(scrypt_platform.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(argon2-encoding.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(argon2-encoding.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(salsa20_ref.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(salsa20_ref.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(salsa20_xmm6int-sse2.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(salsa20_xmm6int-sse2.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(salsa20_xmm6int-avx2.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(salsa20_xmm6int-avx2.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(chacha20_ref.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(chacha20_ref.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(chacha20_dolbeau-avx2.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(chacha20_dolbeau-avx2.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(chacha20_dolbeau-ssse3.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(chacha20_dolbeau-ssse3.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(blake2b-ref.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(blake2b-ref.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(argon2-fill-block-ref.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(argon2-fill-block-ref.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(argon2-fill-block-avx2.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(argon2-fill-block-avx2.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(argon2-fill-block-ssse3.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(argon2-fill-block-ssse3.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(blake2b-long.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(blake2b-long.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(pwhash_scryptsalsa208sha256_nosse.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(pwhash_scryptsalsa208sha256_nosse.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(pwhash_scryptsalsa208sha256_sse.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(pwhash_scryptsalsa208sha256_sse.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(core_salsa_ref.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(core_salsa_ref.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(blake2b-compress-ref.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(blake2b-compress-ref.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(blake2b-compress-ssse3.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(blake2b-compress-ssse3.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(blake2b-compress-sse41.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(blake2b-compress-sse41.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(blake2b-compress-avx2.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(blake2b-compress-avx2.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         liblibsodium_sys-6af8ae465930fbe9.rlib(pbkdf2-sha256.obj) : warning LNK4099: PDB 'libsodium.pdb', 'liblibsodium_sys-6af8ae465930fbe9.rlib(pbkdf2-sha256.obj)' ile veya 'D:\D\Fordeskgpt\target\release\deps\libsodium.pdb' üzerinde bulunamadı; nesne, hata ayıklama bilgileri yokmuş gibi bağlanıyor␍
+         LINK : warning LNK4098: defaultlib 'MSVCRT' diğer kitaplıkların kullanımı ile çakışıyor; /NODEFAULTLIB:library kullanın␍
+         LINK : warning LNK4217: 'abort' sembolü ('libucrt.lib(abort.obj)' içinde tanımlanan), 'libmagnum_opus-7ac3f953ee236977.rlib(celt.c.obj)' tarafından 'celt_fatal' işlevinde içeri aktarıldı␍
+         LINK : warning LNK4217: '_set_abort_behavior' sembolü ('libucrt.lib(abort.obj)' içinde tanımlanan), 'libmagnum_opus-7ac3f953ee236977.rlib(celt.c.obj)' tarafından 'celt_fatal' işlevinde içeri aktarıldı␍
+         LINK : warning LNK4217: '__acrt_iob_func' sembolü ('libucrt.lib(_file.obj)' içinde tanımlanan), 'libmagnum_opus-7ac3f953ee236977.rlib(celt.c.obj)' tarafından 'celt_fatal' işlevinde içeri aktarıldı␍
+         LINK : warning LNK4217: '__stdio_common_vfprintf' sembolü ('libucrt.lib(output.obj)' içinde tanımlanan), 'libmagnum_opus-7ac3f953ee236977.rlib(celt.c.obj)' tarafından '_vfprintf_l' işlevinde içeri aktarıldı␍
+         LINK : warning LNK4217: 'free' sembolü ('libucrt.lib(free.obj)' içinde tanımlanan), 'libmagnum_opus-7ac3f953ee236977.rlib(opus_encoder.c.obj)' tarafından 'opus_encoder_create' işlevinde içeri aktarıldı␍
+         LINK : warning LNK4217: 'free' sembolü ('libucrt.lib(free.obj)' içinde tanımlanan), 'libmagnum_opus-7ac3f953ee236977.rlib(opus_decoder.c.obj)' tarafından 'opus_decoder_create' işlevinde içeri aktarıldı␍
+         LINK : warning LNK4286: 'free' sembolü ('libucrt.lib(free.obj)' içinde tanımlanan), 'libmagnum_opus-7ac3f953ee236977.rlib(repacketizer.c.obj)' tarafından içeri aktarıldı␍
+         LINK : warning LNK4217: 'malloc' sembolü ('libucrt.lib(malloc.obj)' içinde tanımlanan), 'libmagnum_opus-7ac3f953ee236977.rlib(opus_encoder.c.obj)' tarafından 'opus_alloc' işlevinde içeri aktarıldı␍
+         LINK : warning LNK4217: 'malloc' sembolü ('libucrt.lib(malloc.obj)' içinde tanımlanan), 'libmagnum_opus-7ac3f953ee236977.rlib(opus_decoder.c.obj)' tarafından 'opus_decode_frame' işlevinde içeri aktarıldı␍
+         LINK : warning LNK4286: 'malloc' sembolü ('libucrt.lib(malloc.obj)' içinde tanımlanan), 'libmagnum_opus-7ac3f953ee236977.rlib(repacketizer.c.obj)' tarafından içeri aktarıldı
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `rustdesk` (lib) generated 17 warnings (run `cargo fix --lib -p rustdesk` to apply 8 suggestions)
+    Finished `release` profile [optimized] target(s) in 5m 19s
+Resolving dependencies...
+Downloading packages...
+  _fe_analyzer_shared 72.0.0 (109.0.0 available)
+  analyzer 6.7.0 (14.5.0 available)
+  animations 2.0.11 (3.0.0 available)
+  archive 3.6.1 (4.5.1 available)
+  async 2.11.0 (2.13.1 available)
+  auto_size_text_field 2.2.4 (2.3.0 available)
+  back_button_interceptor 6.0.2 (8.0.5 available)
+  boolean_selector 2.1.1 (2.1.2 available)
+  build 2.4.1 (4.0.11 available)
+  build_cli_annotations 2.1.0 (2.1.1 available)
+  build_config 1.1.1 (1.3.3 available)
+  build_daemon 4.0.2 (4.1.6 available)
+  build_resolvers 2.4.2 (3.0.4 available)
+  build_runner 2.4.13 (2.16.2 available)
+  build_runner_core 7.3.2 (9.3.2 available)
+  built_collection 5.1.1 (5.1.2 available)
+  built_value 8.10.1 (8.13.0 available)
+  cached_network_image 3.3.1 (4.0.4 available)
+  cached_network_image_platform_interface 4.0.0 (5.0.3 available)
+  cached_network_image_web 1.2.0 (2.0.3 available)
+  characters 1.3.0 (1.4.1 available)
+  checked_yaml 2.0.3 (2.0.4 available)
+  cli_util 0.4.2 (0.6.0 available)
+  clock 1.1.1 (1.1.3 available)
+  code_builder 4.10.1 (4.12.0 available)
+  collection 1.18.0 (1.19.1 available)
+  cross_file 0.3.4+2 (0.4.0 available)
+  crypto 3.0.6 (3.0.7 available)
+  dart_style 2.3.7 (3.1.13 available)
+  dbus 0.7.11 (0.8.0 available)
+  desktop_drop 0.4.4 (0.8.4 available)
+  device_info_plus 9.1.2 (13.3.0 available)
+  device_info_plus_platform_interface 7.0.2 (8.1.0 available)
+  dropdown_button2 2.3.9 (3.1.0 available)
+  equatable 2.0.7 (3.0.0 available)
+  extended_text 14.0.0 (15.0.2 available)
+  fake_async 1.3.1 (1.3.3 available)
+  ffi 2.1.3 (2.2.0 available)
+  ffigen 8.0.2 (23.0.0 available)
+  file 6.1.4 (7.0.1 available)
+  file_picker 5.5.0 (13.1.0 available)
+  file_selector_linux 0.9.3+2 (0.9.4+1 available)
+  file_selector_macos 0.9.4+2 (0.9.5+1 available)
+  file_selector_platform_interface 2.6.2 (2.7.0 available)
+  file_selector_windows 0.9.3+4 (0.9.3+6 available)
+  flex_color_picker 3.6.0 (4.0.0 available)
+  flex_seed_scheme 3.4.1 (5.0.1 available)
+  flutter_cache_manager 3.3.1 (3.4.5 available)
+  flutter_keyboard_visibility 5.4.1 (7.0.1 available)
+  flutter_keyboard_visibility_linux 1.0.0 (2.0.0 available)
+  flutter_keyboard_visibility_macos 1.0.0 (2.0.0 available)
+  flutter_keyboard_visibility_platform_interface 2.0.0 (3.0.0 available)
+  flutter_keyboard_visibility_web 2.0.0 (3.0.0 available)
+  flutter_keyboard_visibility_windows 1.0.0 (2.0.0 available)
+  flutter_launcher_icons 0.13.1 (0.14.4 available)
+  flutter_lints 2.0.3 (6.0.0 available)
+! flutter_plugin_android_lifecycle 2.0.17 (overridden) (2.0.35 available)
+  flutter_rust_bridge 1.80.1 (2.13.0 available)
+  flutter_svg 2.1.0 (2.3.0 available)
+  freezed 2.5.7 (4.0.2 available)
+  freezed_annotation 2.4.4 (3.1.0 available)
+  frontend_server_client 4.0.0 (4.1.0 available)
+  get 4.7.2 (4.7.3 available)
+  glob 2.1.3 (2.2.0 available)
+  google_fonts 6.2.1 (9.0.0 available)
+  html 0.15.6 (0.15.7 available)
+  http 1.4.0 (1.6.0 available)
+  http_parser 4.0.2 (4.1.2 available)
+  icons_launcher 2.1.7 (3.1.0 available)
+  image 4.3.0 (4.12.0 available)
+  image_picker 1.1.2 (1.2.4 available)
+  image_picker_android 0.8.12+21 (0.8.13+25 available)
+  image_picker_for_web 3.0.6 (3.1.1 available)
+  image_picker_ios 0.8.12+2 (0.8.13+10 available)
+  image_picker_linux 0.2.1+2 (0.2.2 available)
+  image_picker_macos 0.2.1+2 (0.2.2+1 available)
+  image_picker_platform_interface 2.10.1 (2.11.2 available)
+  image_picker_windows 0.2.1+1 (0.2.2 available)
+! intl 0.19.0 (overridden) (0.20.3 available)
+  io 1.0.5 (1.1.0 available)
+  js 0.6.7 (0.7.2 available)
+  json_annotation 4.9.0 (4.12.0 available)
+  leak_tracker 10.0.5 (11.0.2 available)
+  leak_tracker_flutter_testing 3.0.5 (3.0.10 available)
+  leak_tracker_testing 3.0.1 (3.0.2 available)
+  lints 2.1.1 (6.1.0 available)
+  macros 0.1.2-main.4 (0.1.3-main.0 available)
+  matcher 0.12.16+1 (0.12.20 available)
+  material_color_utilities 0.11.1 (0.13.1 available)
+  meta 1.15.0 (1.19.0 available)
+  mime 2.0.0 (2.1.0 available)
+  octo_image 2.1.0 (2.1.2 available)
+  package_config 2.2.0 (3.0.0 available)
+  package_info_plus 4.2.0 (10.2.2 available)
+  package_info_plus_platform_interface 2.0.1 (4.1.0 available)
+  path 1.9.0 (1.9.1 available)
+  path_provider 2.1.5 (2.1.6 available)
+  path_provider_android 2.2.15 (2.3.1 available)
+  path_provider_foundation 2.4.1 (2.6.0 available)
+  path_provider_linux 2.2.1 (2.2.2 available)
+  path_provider_platform_interface 2.1.2 (2.1.3 available)
+  petitparser 6.0.2 (7.1.0 available)
+  platform 3.1.6 (3.2.0 available)
+  pool 1.5.1 (1.5.3 available)
+  provider 6.1.5 (6.1.5+1 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  pubspec_parse 1.4.0 (1.6.0 available)
+  pull_down_button 0.9.4 (discontinued replaced by cupertino_ui)
+  puppeteer 3.16.0 (3.26.0 available)
+  qr 3.0.2 (4.0.0 available)
+  rxdart 0.27.7 (0.28.0 available)
+  screen_retriever 0.1.9 (0.3.0 available)
+  scroll_pos 0.4.0 (0.5.0 available)
+  settings_ui 2.0.2 (4.0.2 available)
+  shelf 1.4.1 (1.4.2 available)
+  shelf_web_socket 1.0.4 (3.0.0 available)
+  source_gen 1.5.0 (4.3.0 available)
+  source_span 1.10.0 (1.10.2 available)
+  sqflite 2.2.0 (2.4.4+1 available)
+  sqflite_common 2.5.4+6 (2.5.13+1 available)
+  stack_trace 1.11.1 (1.12.2 available)
+  stream_channel 2.1.2 (2.1.4 available)
+  stream_transform 2.1.1 (2.1.2 available)
+  string_scanner 1.2.0 (1.4.1 available)
+  synchronized 3.3.0+3 (3.4.2 available)
+  term_glyph 1.2.1 (1.2.2 available)
+  test_api 0.7.2 (0.7.15 available)
+  uni_links_desktop 0.1.7 (discontinued replaced by protocol_handler)
+  universal_io 2.2.2 (2.3.1 available)
+  url_launcher 6.3.1 (6.3.3 available)
+  url_launcher_android 6.3.14 (6.3.33 available)
+  url_launcher_ios 6.3.3 (6.4.2 available)
+  url_launcher_linux 3.2.1 (3.2.3 available)
+  url_launcher_macos 3.2.2 (3.2.6 available)
+  url_launcher_web 2.3.3 (2.4.3 available)
+  url_launcher_windows 3.1.4 (3.1.6 available)
+  uuid 3.0.7 (4.6.0 available)
+  vector_graphics 1.1.18 (1.2.3 available)
+  vector_graphics_compiler 1.1.16 (1.3.0 available)
+  vector_math 2.1.4 (2.4.3 available)
+  video_player 2.9.5 (2.14.1 available)
+  video_player_android 2.7.16 (2.12.2 available)
+  video_player_avfoundation 2.7.1 (2.12.1 available)
+  video_player_platform_interface 6.3.0 (6.9.0 available)
+  video_player_web 2.3.5 (2.4.0 available)
+  vm_service 14.2.5 (15.3.0 available)
+  wakelock_plus 1.2.1 (1.8.1 available)
+  wakelock_plus_platform_interface 1.2.3 (1.7.0 available)
+  watcher 1.1.2 (1.2.1 available)
+  web 0.5.1 (1.1.1 available)
+  web_socket_channel 2.4.5 (3.0.3 available)
+  win32 5.10.1 (6.4.0 available)
+  win32_registry 1.1.5 (3.0.3 available)
+  xml 6.5.0 (7.1.0 available)
+  yaml 3.1.3 (3.1.4 available)
+  yaml_edit 2.2.2 (2.2.4 available)
+Got dependencies!
+2 packages are discontinued.
+156 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+
+Building Windows application...                                    89,1s
+√ Built build\windows\x64\runner\Release\ForlanDestek.exe
+Requirement already satisfied: brotli in C:\Users\o\AppData\Local\Programs\Python\Python314\Lib\site-packages (from -r requirements.txt (line 1)) (1.2.0)
+warning: patch for the non root package will be ignored, specify patch at the workspace root:
+package:   D:\D\Fordeskgpt\libs\hbb_common\Cargo.toml
+workspace: D:\D\Fordeskgpt\Cargo.toml
+   Compiling rustdesk-portable-packer v1.17.0 (D:\D\Fordeskgpt\libs\portable)
+   Compiling windows v0.61.1
+warning: unexpected `cfg` condition name: `linux`
+   --> libs\portable\src\bin_reader.rs:238:11
+    |
+238 |     #[cfg(linux)]
+    |           ^^^^^ help: found config with similar value: `target_os = "linux"`
+    |
+    = help: expected names are: `docsrs`, `feature`, and `test` and 34 more
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(linux)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(linux)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition name: `linux`
+   --> libs\portable\src\main.rs:203:11
+    |
+203 |     #[cfg(linux)]
+    |           ^^^^^ help: found config with similar value: `target_os = "linux"`
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(linux)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(linux)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: `rustdesk-portable-packer` (bin "rustdesk-portable-packer") generated 2 warnings
+    Finished `release` profile [optimized] target(s) in 42.07s
+Executable path: .\ForlanDestek.exe
+Compression level: 11
+Processing .\desktop_drop_plugin.dll...
+Processing .\desktop_multi_window_plugin.dll...
+Processing .\dylib_virtual_display.dll...
+Processing .\file_selector_windows_plugin.dll...
+Processing .\flutter_custom_cursor_plugin.dll...
+Processing .\flutter_gpu_texture_renderer_plugin.dll...
+Processing .\flutter_windows.dll...
+Processing .\ForlanDestek.exe...
+Processing .\librustdesk.dll...
+Processing .\printer_driver_adapter.dll...
+Processing .\screen_retriever_plugin.dll...
+Processing .\texture_rgba_renderer_plugin.dll...
+Processing .\uni_links_desktop_plugin.dll...
+Processing .\url_launcher_windows_plugin.dll...
+Processing .\window_manager_plugin.dll...
+Processing .\window_size_plugin.dll...
+Processing .\data\app.so...
+Processing .\data\icudtl.dat...
+Processing .\data\flutter_assets\AssetManifest.bin...
+Processing .\data\flutter_assets\AssetManifest.json...
+Processing .\data\flutter_assets\FontManifest.json...
+Processing .\data\flutter_assets\NOTICES.Z...
+Processing .\data\flutter_assets\assets\actions.svg...
+Processing .\data\flutter_assets\assets\actions_mobile.svg...
+Processing .\data\flutter_assets\assets\address_book.ttf...
+Processing .\data\flutter_assets\assets\android.svg...
+Processing .\data\flutter_assets\assets\arrow.svg...
+Processing .\data\flutter_assets\assets\auth-apple.svg...
+Processing .\data\flutter_assets\assets\auth-auth0.svg...
+Processing .\data\flutter_assets\assets\auth-default.svg...
+Processing .\data\flutter_assets\assets\auth-facebook.svg...
+Processing .\data\flutter_assets\assets\auth-github.svg...
+Processing .\data\flutter_assets\assets\auth-gitlab.svg...
+Processing .\data\flutter_assets\assets\auth-google.svg...
+Processing .\data\flutter_assets\assets\auth-microsoft.svg...
+Processing .\data\flutter_assets\assets\auth-okta.svg...
+Processing .\data\flutter_assets\assets\call_end.svg...
+Processing .\data\flutter_assets\assets\call_wait.svg...
+Processing .\data\flutter_assets\assets\chat.svg...
+Processing .\data\flutter_assets\assets\chat2.svg...
+Processing .\data\flutter_assets\assets\checkbox-outline.svg...
+Processing .\data\flutter_assets\assets\chevron_up_chevron_down.svg...
+Processing .\data\flutter_assets\assets\close.svg...
+Processing .\data\flutter_assets\assets\device_group.ttf...
+Processing .\data\flutter_assets\assets\display.svg...
+Processing .\data\flutter_assets\assets\display_switcher.svg...
+Processing .\data\flutter_assets\assets\dots.svg...
+Processing .\data\flutter_assets\assets\file.svg...
+Processing .\data\flutter_assets\assets\file_transfer.svg...
+Processing .\data\flutter_assets\assets\folder.svg...
+Processing .\data\flutter_assets\assets\folder_new.svg...
+Processing .\data\flutter_assets\assets\forlan-message.wav...
+Processing .\data\flutter_assets\assets\fullscreen.svg...
+Processing .\data\flutter_assets\assets\fullscreen_exit.svg...
+Processing .\data\flutter_assets\assets\gestures.ttf...
+Processing .\data\flutter_assets\assets\home.svg...
+Processing .\data\flutter_assets\assets\icon.ico...
+Processing .\data\flutter_assets\assets\icon.png...
+Processing .\data\flutter_assets\assets\icon.svg...
+Processing .\data\flutter_assets\assets\insecure.svg...
+Processing .\data\flutter_assets\assets\insecure_relay.svg...
+Processing .\data\flutter_assets\assets\kb_layout_iso.svg...
+Processing .\data\flutter_assets\assets\kb_layout_not_iso.svg...
+Processing .\data\flutter_assets\assets\keyboard_mouse.svg...
+Processing .\data\flutter_assets\assets\linux.svg...
+Processing .\data\flutter_assets\assets\mac.svg...
+Processing .\data\flutter_assets\assets\message_24dp_5F6368.svg...
+Processing .\data\flutter_assets\assets\more.ttf...
+Processing .\data\flutter_assets\assets\peer_searchbar.ttf...
+Processing .\data\flutter_assets\assets\pinned.svg...
+Processing .\data\flutter_assets\assets\rec.svg...
+Processing .\data\flutter_assets\assets\record_screen.svg...
+Processing .\data\flutter_assets\assets\refresh.svg...
+Processing .\data\flutter_assets\assets\scam.png...
+Processing .\data\flutter_assets\assets\screen.svg...
+Processing .\data\flutter_assets\assets\search.svg...
+Processing .\data\flutter_assets\assets\secure.svg...
+Processing .\data\flutter_assets\assets\secure_relay.svg...
+Processing .\data\flutter_assets\assets\tabbar.ttf...
+Processing .\data\flutter_assets\assets\transfer.svg...
+Processing .\data\flutter_assets\assets\trash.svg...
+Processing .\data\flutter_assets\assets\unpinned.svg...
+Processing .\data\flutter_assets\assets\voice_call.svg...
+Processing .\data\flutter_assets\assets\voice_call_waiting.svg...
+Processing .\data\flutter_assets\assets\win.svg...
+Processing .\data\flutter_assets\fonts\MaterialIcons-Regular.otf...
+Processing .\data\flutter_assets\packages\dash_chat_2\assets\placeholder.png...
+Processing .\data\flutter_assets\packages\dash_chat_2\assets\profile_placeholder.png...
+Processing .\data\flutter_assets\packages\flex_color_picker\assets\opacity.png...
+Processing .\data\flutter_assets\packages\wakelock_plus\assets\no_sleep.js...
+Processing .\data\flutter_assets\packages\window_manager\images\ic_chrome_close.png...
+Processing .\data\flutter_assets\packages\window_manager\images\ic_chrome_maximize.png...
+Processing .\data\flutter_assets\packages\window_manager\images\ic_chrome_minimize.png...
+Processing .\data\flutter_assets\packages\window_manager\images\ic_chrome_unmaximize.png...
+Processing .\data\flutter_assets\shaders\ink_sparkle.frag...
+Processing .\drivers\RustDeskPrinterDriver\RustDeskPrinterDriver-manifest.ini...
+Processing .\drivers\RustDeskPrinterDriver\rustdeskprinterdriver.cat...
+Processing .\drivers\RustDeskPrinterDriver\RustDeskPrinterDriver.gpd...
+Processing .\drivers\RustDeskPrinterDriver\RustDeskPrinterDriver.inf...
+Processing .\drivers\RustDeskPrinterDriver\RustDeskPrinterDriverRenderFilter-PipelineConfig.xml...
+Processing .\drivers\RustDeskPrinterDriver\RustDeskPrinterDriverRenderFilter.dll...
+Processing .\usbmmidd_v2\idd_instructions.txt...
+Processing .\usbmmidd_v2\License.txt...
+Processing .\usbmmidd_v2\usbmmidd.cat...
+Processing .\usbmmidd_v2\usbmmIdd.inf...
+Processing .\usbmmidd_v2\x64\usbmmIdd.dll...
+Metadata has been written to D:\D\Fordeskgpt\libs\portable\data.bin
+App metadata has been written to D:\D\Fordeskgpt\libs\portable\app_metadata.toml
+output location: D:\D\Fordeskgpt/rustdesk_portable.exe
+output location: D:\D\Fordeskgpt\ForlanDestek-1.17.0-Portable.exe

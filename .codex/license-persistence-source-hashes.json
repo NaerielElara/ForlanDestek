@@ -1,0 +1,50 @@
+[
+  {
+    "Path": "Cargo.toml",
+    "SHA256": "96CD0F42965A69423F519C7F22DEA99CF93347162D88C21591C4871E3F821AD6"
+  },
+  {
+    "Path": "src/forlan_policy.rs",
+    "SHA256": "D2B8FB95DABEA4C97D8F0AB7CF3DFECC95DF676D4713EB4306C6582BA36F9D17"
+  },
+  {
+    "Path": "src/flutter_ffi.rs",
+    "SHA256": "B52282BD31C03B48FFAA6633867D1888DF211A9E264B15E488B61CDDE04D0AE9"
+  },
+  {
+    "Path": "src/platform/windows/forlan_session_store.rs",
+    "SHA256": "004C2E49761682961861CF9519731A76FE4A4507FCD5000708ED686134D4CA36"
+  },
+  {
+    "Path": "flutter/lib/desktop/forlan_background_lifecycle.dart",
+    "SHA256": "2D3A65C73CEBDC823FFDBC2C3D7C40535E02EC6C06CC6254672F03374D2D6D78"
+  },
+  {
+    "Path": "flutter/lib/desktop/pages/forlan_support_session.dart",
+    "SHA256": "8DA8007F55C054E95F79D6214D2B1D4A2959AD96E421B4EC2DB8A4F58DA6CA4A"
+  },
+  {
+    "Path": "flutter/lib/desktop/pages/forlan_support_dialog.dart",
+    "SHA256": "52DFC4D03AE11CC8C65839CC49AEA6905460F3AEDB4C0DE90DE52B70CCFD9CF1"
+  },
+  {
+    "Path": "flutter/lib/desktop/pages/forlan_support_workspace.dart",
+    "SHA256": "3346EBFEE8ACFD4FC135FF56CC0F1A69DAE2A8224E70408160CB88B4847CFD42"
+  },
+  {
+    "Path": "deploy/forlan-support/app/sessions.py",
+    "SHA256": "2E5AADC0D4F74FAF0B512EE77C65D3C5772D2DC22CC198FB9AF7F6342707F094"
+  },
+  {
+    "Path": "deploy/forlan-support/app/main.py",
+    "SHA256": "44350D15B3EFBEDC375C4AC88C633F776AFE3604BFE48D612C228FF28FCDAEC6"
+  },
+  {
+    "Path": "deploy/forlan-support/app/management.py",
+    "SHA256": "4D391F04A5DA43073F4CE6A9C564C6C21721E3C292DC0FC15FD588CD482DFDBB"
+  },
+  {
+    "Path": "deploy/forlan-support/tests/test_management.py",
+    "SHA256": "E45265B4F7D26DCA2B3A8F11D146E55306AB2A3A4613C6B2C19B59A042C0D3D5"
+  }
+]

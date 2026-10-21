@@ -1,0 +1,22 @@
+test_connection_request_requires_active_customer_license (test_authorization.AuthorizationTests.test_connection_request_requires_active_customer_license) ... ok
+test_customer_can_only_access_their_own_ticket (test_authorization.AuthorizationTests.test_customer_can_only_access_their_own_ticket) ... ok
+test_initial_event_poll_does_not_replay_history (test_authorization.AuthorizationTests.test_initial_event_poll_does_not_replay_history) ... ok
+test_staff_and_admin_role_boundaries (test_authorization.AuthorizationTests.test_staff_and_admin_role_boundaries) ... ok
+test_ticket_category_is_limited_to_supported_categories (test_authorization.AuthorizationTests.test_ticket_category_is_limited_to_supported_categories) ... ok
+test_ticket_device_id_accepts_existing_clients_and_normalizes_digits (test_authorization.AuthorizationTests.test_ticket_device_id_accepts_existing_clients_and_normalizes_digits) ... ok
+/usr/local/lib/python3.12/site-packages/psycopg_pool/pool.py:134: DeprecationWarning: the default for the ConnectionPool 'open' parameter will become 'False' in a future release. Please use open={True|False} explicitly, or use the pool as context manager using: `with ConnectionPool(...) as pool: ...`
+  warnings.warn(
+test_customer_sees_only_active_tickets_and_cannot_read_operation_history (test_management.ManagementTests.test_customer_sees_only_active_tickets_and_cannot_read_operation_history) ... ok
+test_free_connection_limit_cooldown_and_premium_parallel_sessions (test_management.ManagementTests.test_free_connection_limit_cooldown_and_premium_parallel_sessions) ... ok
+test_license_code_remains_viewable_and_rotation_revokes_old_sessions (test_management.ManagementTests.test_license_code_remains_viewable_and_rotation_revokes_old_sessions) ... ok
+test_license_device_limit_inventory_and_revocation (test_management.ManagementTests.test_license_device_limit_inventory_and_revocation) ... ok
+test_saved_session_rejects_expired_refresh_and_archived_staff (test_management.ManagementTests.test_saved_session_rejects_expired_refresh_and_archived_staff) ... ok
+test_saved_session_restores_license_after_access_expires_but_checks_device_and_revocation (test_management.ManagementTests.test_saved_session_restores_license_after_access_expires_but_checks_device_and_revocation) ... ok
+test_technician_notification_keeps_owner_and_targets_only_recipient (test_management.ManagementTests.test_technician_notification_keeps_owner_and_targets_only_recipient) ... ok
+test_trial_expiry_and_file_children_share_the_parent_policy (test_management.ManagementTests.test_trial_expiry_and_file_children_share_the_parent_policy) ... ok
+test_usage_only_license_keeps_unlimited_connections_but_cannot_use_support (test_management.ManagementTests.test_usage_only_license_keeps_unlimited_connections_but_cannot_use_support) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 3.610s
+
+OK

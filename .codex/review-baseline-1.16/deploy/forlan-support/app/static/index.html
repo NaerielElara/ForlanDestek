@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Forlan Destek · Yönetim</title>
+  <link rel="stylesheet" href="/admin/admin.css">
+  <script src="/admin/admin.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="brand"><span class="brand-mark">F</span><div><strong>FORLAN</strong><small>DESTEK YÖNETİMİ</small></div></header>
+    <section id="notice" class="notice" role="status" aria-live="polite" hidden></section>
+    <section id="login-panel" class="panel login-panel">
+      <h1>Yönetici girişi</h1>
+      <p>Hesap ve lisans yönetimi için yönetici hesabınızla giriş yapın.</p>
+      <form id="login-form">
+        <label>Kullanıcı adı<input name="username" autocomplete="username" required maxlength="128"></label>
+        <label>Parola<input name="password" type="password" autocomplete="current-password" required maxlength="256"></label>
+        <button type="submit">Giriş yap</button>
+      </form>
+    </section>
+    <section id="admin-panel" hidden>
+      <div class="panel toolbar"><div><h1>Yönetim</h1><p id="identity"></p></div><button id="logout" class="secondary">Oturumu kapat</button></div>
+      <div class="columns">
+        <section class="panel">
+          <h2>Teknisyen / yönetici ekle</h2>
+          <form id="account-form">
+            <label>Firma / Kullanıcı bilgisi<input name="display_name" required maxlength="160"></label>
+            <label>Kullanıcı adı<input name="username" required minlength="3" maxlength="128" autocomplete="off"></label>
+            <label>İlk parola<input name="password" type="password" required minlength="12" maxlength="256" autocomplete="new-password"></label>
+            <label>Rol<select name="role"><option value="technician">Teknisyen</option><option value="admin">Yönetici</option></select></label>
+            <button type="submit">Hesap oluştur</button>
+          </form>
+        </section>
+        <section class="panel">
+          <h2>Firma ve lisans oluştur</h2>
+          <form id="license-form">
+            <label>Firma<select name="account_id" id="customer-select"></select></label>
+            <label id="firm-name-label">Yeni firma adı<input name="display_name" maxlength="160"></label>
+            <label>Lisans süresi (gün)<input name="duration_days" type="number" min="1" max="36500" placeholder="Süresiz için boş bırakın"></label>
+            <button type="submit">Lisans kodu üret</button>
+          </form>
+          <p class="hint">Müşteri yalnız lisans koduyla giriş yapar. Mevcut firmaya da yeni lisans ekleyebilirsiniz. Kodlar aşağıdaki lisans listesinde saklanır.</p>
+        </section>
+      </div>
+      <section class="panel toolbar"><input id="search" placeholder="Firma, teknisyen veya lisans kodu ara"><label><input id="show-archived" type="checkbox"> Arşivlenenleri göster</label><button id="refresh" class="secondary">Yenile</button></section>
+      <section class="panel table-panel"><h2>Firmalar ve yetkili hesaplar</h2><div id="accounts" class="table-wrap"></div></section>
+      <section class="panel table-panel"><h2>Lisanslar</h2><div id="licenses" class="table-wrap"></div></section>
+      <section class="panel table-panel"><h2>İşlem geçmişi</h2><p class="hint">Son 500 işlem gösterilir. Lisans kodları ve parolalar işlem geçmişine yazılmaz.</p><div id="audit" class="table-wrap"></div></section>
+    </section>
+  </main>
+</body>
+</html>

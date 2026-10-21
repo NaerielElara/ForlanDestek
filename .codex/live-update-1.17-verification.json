@@ -1,0 +1,18 @@
+{
+  "file": "ForlanDestek-1.17.0-portable.exe",
+  "sha256": "390f25ee3fe8310c001b0117dc65636b9d9a37e8d2df525f25632b28fdd5cf4c",
+  "bytes": 26262016,
+  "markerValid": true,
+  "oldProfileFilesCleaned": true,
+  "oldSpaceProfilePresent": false,
+  "oldMainProcessPresent": false,
+  "oldTrayProcessPresent": false,
+  "newMainProcessPresent": true,
+  "newTrayProcessPresent": true,
+  "stableLauncherMatchesPackage": true,
+  "version": "1.17.0",
+  "startupTextVerified": true,
+  "freeNoticeAboveServiceVerified": true,
+  "supportHiddenForGuestVerified": true,
+  "manualLicenseRestart": "awaiting user sign-in"
+}

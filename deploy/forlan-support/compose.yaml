@@ -1,0 +1,87 @@
+name: forlan-destek-support
+
+services:
+  support-db:
+    container_name: forlan-support-db
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: forlan_support
+      POSTGRES_USER: forlan_support
+      POSTGRES_PASSWORD: ${FORLAN_DB_PASSWORD:?Set FORLAN_DB_PASSWORD in .env}
+    volumes:
+      - forlan_support_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forlan_support -d forlan_support"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [support]
+    security_opt:
+      - no-new-privileges:true
+
+  support-api:
+    container_name: forlan-support-api
+    build: ../forlan-support
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://forlan_support:${FORLAN_DB_PASSWORD}@support-db:5432/forlan_support
+      JWT_SECRET: ${FORLAN_JWT_SECRET:?Set FORLAN_JWT_SECRET in .env}
+      TOKEN_TTL_HOURS: ${FORLAN_TOKEN_TTL_HOURS:-12}
+      BOOTSTRAP_ADMIN_USERNAME: ${FORLAN_BOOTSTRAP_ADMIN_USERNAME:-}
+      BOOTSTRAP_ADMIN_PASSWORD: ${FORLAN_BOOTSTRAP_ADMIN_PASSWORD:-}
+    depends_on:
+      support-db:
+        condition: service_healthy
+    expose:
+      - "8080"
+    ports:
+      - "127.0.0.1:18080:8080/tcp"
+    networks: [support]
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3)"
+      interval: 10s
+      timeout: 4s
+      retries: 10
+      start_period: 20s
+
+  support-proxy:
+    container_name: forlan-support-proxy
+    image: caddy:2-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+    restart: unless-stopped
+    environment:
+      FORLAN_SUPPORT_HOST: ${FORLAN_SUPPORT_HOST:-95.70.196.174}
+    ports:
+      - "24443:24443/tcp"
+    volumes:
+      - ../forlan-support/Caddyfile:/etc/caddy/Caddyfile:ro
+      - forlan_caddy_data:/data
+      - forlan_caddy_config:/config
+    depends_on:
+      support-api:
+        condition: service_healthy
+    networks: [support]
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  support:
+    name: forlan_support_network
+
+volumes:
+  forlan_support_data:
+    name: forlan_support_data
+  forlan_caddy_data:
+    name: forlan_caddy_data
+  forlan_caddy_config:
+    name: forlan_caddy_config

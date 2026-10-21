@@ -1,0 +1,1629 @@
+--- before/build.py
++++ after/build.py
+@@ -969,6 +969,7 @@
+ 
+ def stage_windows_portable_assets():
+     release_dir = Path(flutter_build_dir_2)
++    (release_dir / 'data/flutter_assets/assets/forlan-connection.wav').unlink(missing_ok=True)
+     with tempfile.TemporaryDirectory(prefix='rustdesk-portable-assets-') as temp_dir:
+         temp_dir = Path(temp_dir)
+ 
+--- before/Cargo.lock
++++ after/Cargo.lock
+@@ -7087,7 +7087,7 @@
+ 
+ [[package]]
+ name = "rustdesk"
+-version = "1.15.0"
++version = "1.16.0"
+ dependencies = [
+  "android-wakelock",
+  "android_logger",
+@@ -7202,7 +7202,7 @@
+ 
+ [[package]]
+ name = "rustdesk-portable-packer"
+-version = "1.15.0"
++version = "1.16.0"
+ dependencies = [
+  "brotli",
+  "dirs 5.0.1",
+--- before/Cargo.toml
++++ after/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "rustdesk"
+-version = "1.15.0"
++version = "1.16.0"
+ authors = ["rustdesk <info@rustdesk.com>"]
+ edition = "2021"
+ build= "build.rs"
+--- before/deploy\forlan-support\app\main.py
++++ after/deploy\forlan-support\app\main.py
+@@ -16,7 +16,7 @@
+ from pydantic import BaseModel, Field, field_validator
+ from psycopg.rows import dict_row
+ from psycopg_pool import ConnectionPool
+-from . import management
++from . import entitlements, management
+ 
+ 
+ DATABASE_URL = os.environ.get("DATABASE_URL", "")
+@@ -38,6 +38,9 @@
+ class LoginInput(BaseModel):
+     username: str = Field(min_length=1, max_length=128)
+     password: str = Field(min_length=1, max_length=256)
++    device_id: str | None = Field(default=None, pattern=r'^[0-9]{3,12}$')
++    device_name: str = Field(default='', max_length=160)
++    app_version: str = Field(default='', max_length=40)
+ 
+ 
+ class AccountInput(BaseModel):
+@@ -305,6 +308,7 @@
+     pool: ConnectionPool = Depends(database),
+ ) -> dict:
+     with pool.connection() as conn:
++        entitlements.require_support(conn,account)
+         cursor = conn.execute("SELECT COALESCE(max(id), 0) AS cursor FROM support_events").fetchone()["cursor"]
+         if after is None:
+             return {"cursor": cursor, "events": []}
+@@ -318,9 +322,10 @@
+             WHERE e.id > %s AND e.id <= %s AND e.actor_id IS DISTINCT FROM %s
+               AND (e.customer_id = %s OR (e.staff_visible AND %s))
+               AND (e.recipient_id IS NULL OR (e.recipient_id = %s AND %s))
+-              AND (%s OR t.status NOT IN ('resolved','closed'))
++              AND (%s OR t.status NOT IN ('resolved','closed') OR e.kind='ticket_status')
+               AND (e.kind <> 'connection_request' OR EXISTS (
+                   SELECT 1 FROM licenses l WHERE l.account_id = e.customer_id
++                  AND l.support_enabled=TRUE AND (t.license_id IS NULL OR l.id=t.license_id)
+                   AND l.revoked = FALSE AND l.archived=FALSE AND (l.expires_at IS NULL OR l.expires_at > now())
+               ))
+             ORDER BY e.id LIMIT 100
+@@ -372,21 +377,20 @@
+         audit(conn, account["id"], "login", "account", account["id"])
+         conn.commit()
+         now = datetime.now(timezone.utc)
+-        token = jwt.encode({"sub": str(account["id"]), "ver":account['session_version'], "iat": now, "exp": now + timedelta(hours=TOKEN_TTL_HOURS)}, JWT_SECRET, algorithm="HS256")
+-        has_license = licensed_customer(conn, account["id"])
++        token = jwt.encode({"sub": str(account["id"]), "ver":account['session_version'], "device_id":body.device_id, "iat": now, "exp": now + timedelta(hours=TOKEN_TTL_HOURS)}, JWT_SECRET, algorithm="HS256")
+         return {
+             "access_token": token,
+             "token_type": "bearer",
+             "expires_in": TOKEN_TTL_HOURS * 3600,
+-            "account": {"id": account["id"], "username": username, "display_name": account["display_name"], "role": account["role"], "licensed": has_license},
++            "account": {"id": account["id"], "username": username, "display_name": account["display_name"], "role": account["role"], "licensed": True, "support_enabled":True, "device_id":body.device_id},
+         }
+ 
+ 
+ @app.get("/api/me")
+ def me(account: dict = Depends(current_account), pool: ConnectionPool = Depends(database)) -> dict:
+-    with pool.connection() as conn:
+-        license = conn.execute('SELECT expires_at FROM licenses WHERE account_id=%s AND revoked=FALSE AND archived=FALSE AND (expires_at IS NULL OR expires_at>now()) ORDER BY expires_at DESC NULLS FIRST LIMIT 1',(account['id'],)).fetchone()
+-        return {**account, "licensed":license is not None, 'license_expires_at':license['expires_at'] if license else None}
++    if account['role'] in ('admin','technician'):
++        return {**account,'licensed':True,'support_enabled':True,'license_kind':'staff','device_limit':0,'license_expires_at':None}
++    return account
+ 
+ 
+ @app.post("/api/admin/accounts", status_code=201)
+@@ -489,11 +493,12 @@
+     if account["role"] != Role.customer.value:
+         raise HTTPException(status_code=403, detail="Customer account required")
+     with pool.connection() as conn:
+-        if not licensed_customer(conn, account["id"]):
+-            raise HTTPException(status_code=403, detail="An active support license is required")
++        entitlements.require_support(conn,account)
++        if body.device_id and account.get('device_id') and body.device_id!=account['device_id']:
++            raise HTTPException(422,'Destek kaydı yalnız lisansla giriş yapılan cihaz için oluşturulabilir.')
+         row = conn.execute(
+-            "INSERT INTO tickets (customer_id, category, title, description, device_id) VALUES (%s, %s, %s, %s, %s) RETURNING *",
+-            (account["id"], body.category.strip(), body.title.strip(), body.description.strip(), body.device_id),
++            "INSERT INTO tickets (customer_id, category, title, description, device_id, license_id) VALUES (%s, %s, %s, %s, %s, %s) RETURNING *",
++            (account["id"], body.category.strip(), body.title.strip(), body.description.strip(), account.get('device_id') or body.device_id,account['license_id']),
+         ).fetchone()
+         audit(conn, account["id"], "ticket_created", "ticket", row["id"])
+         add_support_event(conn, row, account["id"], "ticket_created", row["description"])
+@@ -508,6 +513,7 @@
+ 
+ 
+ def visible_ticket(conn: psycopg.Connection, ticket_id: int, account: dict) -> dict:
++    entitlements.require_support(conn,account)
+     ticket = conn.execute("SELECT * FROM tickets WHERE id = %s", (ticket_id,)).fetchone()
+     if not ticket:
+         raise HTTPException(status_code=404, detail="Ticket not found")
+@@ -568,7 +574,7 @@
+             raise HTTPException(status_code=404, detail="Ticket not found")
+         if ticket["status"] in ("resolved", "closed"):
+             raise HTTPException(status_code=409, detail="This support ticket is closed")
+-        if not licensed_customer(conn, ticket["customer_id"]):
++        if not entitlements.ticket_has_support(conn,ticket):
+             raise HTTPException(status_code=403, detail="An active customer support license is required")
+         if not ticket.get("device_id"):
+             raise HTTPException(status_code=409, detail="The support ticket has no device ID")
+@@ -596,7 +602,8 @@
+             conn.execute('INSERT INTO ticket_messages(ticket_id,sender_id,message) VALUES (%s,%s,%s)',(ticket_id,staff['id'],body.note.strip()))
+         management.audit_detail(conn,staff,'ticket_status_changed','ticket',ticket_id,{'status':body.status,'note':body.note.strip()})
+         ticket=visible_ticket(conn,ticket_id,staff)
+-        add_support_event(conn,ticket,staff['id'],'message',f"Kayıt durumu: {body.status}. {body.note.strip()}")
++        status_name={'open':'Açık','in_progress':'İşlemde','waiting_customer':'Yanıtınız bekleniyor','resolved':'Tamamlandı','closed':'İptal edildi'}[body.status]
++        add_support_event(conn,ticket,staff['id'],'ticket_status',f"Kayıt durumu: {status_name}. {body.note.strip()}")
+         conn.commit()
+         return row
+ 
+--- before/deploy\forlan-support\app\management.py
++++ after/deploy\forlan-support\app\management.py
+@@ -4,6 +4,8 @@
+ import json
+ import secrets
+ from datetime import datetime, timedelta, timezone
++from typing import Literal
++from uuid import UUID
+ 
+ import jwt
+ from cryptography.fernet import Fernet
+@@ -11,22 +13,36 @@
+ from fastapi import Depends, HTTPException, Request
+ from pydantic import BaseModel, Field, field_validator
+ from psycopg.types.json import Jsonb
++from . import entitlements
+ 
+ 
+ class LicenseCodeInput(BaseModel):
+     license_code: str = Field(min_length=10, max_length=128)
++    device_id: str | None = Field(default=None, pattern=r'^[0-9]{3,12}$')
++    device_name: str = Field(default='', max_length=160)
++    app_version: str = Field(default='', max_length=40)
+ 
+ 
+ class FirmLicenseInput(BaseModel):
+     account_id: int | None = Field(default=None, gt=0)
+     display_name: str = Field(default='', max_length=160)
+     duration_days: int | None = Field(default=None, ge=1, le=36500)
++    support_enabled: bool = False
++    license_kind: Literal['standard','trial'] = 'standard'
++    device_limit: int = Field(default=1, ge=0, le=1000)
+ 
+ 
+ class LicenseActionInput(BaseModel):
+-    action: str = Field(pattern=r'^(renew|rotate|revoke|archive|restore|delete)$')
++    action: str = Field(pattern=r'^(renew|rotate|revoke|archive|restore|delete|configure)$')
+     duration_days: int | None = Field(default=None, ge=1, le=36500)
+     confirmation: str = ''
++    support_enabled: bool | None = None
++    license_kind: Literal['standard','trial'] | None = None
++    device_limit: int | None = Field(default=None, ge=0, le=1000)
++
++
++class DeviceActionInput(BaseModel):
++    action: Literal['revoke','restore']
+ 
+ 
+ class AccountActionInput(BaseModel):
+@@ -44,6 +60,19 @@
+     device_id: str = Field(pattern=r'^[0-9]{3,12}$')
+     session_id: str = Field(pattern=r'^[a-fA-F0-9-]{36}$')
+     peer_id: str = Field(min_length=1, max_length=160)
++    parent_session_id: str | None = Field(default=None, pattern=r'^[a-fA-F0-9-]{36}$')
++
++    @field_validator('session_id','parent_session_id')
++    @classmethod
++    def valid_session_id(cls,value):
++        return str(UUID(value)) if value else None
++
++    @field_validator('peer_id')
++    @classmethod
++    def peer_not_blank(cls,value):
++        if not value.strip():
++            raise ValueError('Peer ID cannot be blank')
++        return value
+ 
+ 
+ def initialize(conn):
+@@ -100,6 +129,7 @@
+         );
+         CREATE INDEX IF NOT EXISTS connection_leases_device_idx ON connection_leases(device_id, cooldown_until);
+     ''')
++    entitlements.initialize(conn)
+ 
+ 
+ def normalize_code(value):
+@@ -137,6 +167,9 @@
+                                (claims['license_id'], account['id'])).fetchone()
+         if not license or claims.get('license_ver') != license['code_version']:
+             raise HTTPException(401, 'Lisansınız yenilenmiş, iptal edilmiş veya süresi dolmuş.')
++        entitlements.bind_session(conn, claims, account, license)
++    elif account['role'] in ('admin','technician'):
++        account['device_id']=claims.get('device_id')
+ 
+ 
+ def register(app, core):
+@@ -156,7 +189,7 @@
+             if attempts >= 40:
+                 raise HTTPException(429, 'Çok fazla deneme yapıldı. Daha sonra tekrar deneyin.')
+             license = conn.execute('''SELECT l.*,a.username,a.display_name,a.role,a.disabled,a.archived AS account_archived,a.session_version
+-                FROM licenses l JOIN accounts a ON a.id=l.account_id WHERE l.code_hash=%s''', (digest,)).fetchone()
++                FROM licenses l JOIN accounts a ON a.id=l.account_id WHERE l.code_hash=%s FOR UPDATE OF l''', (digest,)).fetchone()
+             now = datetime.now(timezone.utc)
+             if not license or license['disabled'] or license['account_archived'] or license['revoked'] or license['archived'] or (license['expires_at'] and license['expires_at'] <= now):
+                 conn.execute("DELETE FROM login_attempts WHERE attempted_at<now()-interval '1 day'")
+@@ -164,13 +197,15 @@
+                 conn.commit()
+                 raise HTTPException(401, 'Lisans kodu geçersiz, iptal edilmiş veya süresi dolmuş.')
+             conn.execute('DELETE FROM login_attempts WHERE username=%s AND source_ip=%s', ('license:'+digest, source))
+-            claims = {'sub':str(license['account_id']), 'ver':license['session_version'], 'license_id':license['id'], 'license_ver':license['code_version'], 'iat':now, 'exp':now+timedelta(hours=core.TOKEN_TTL_HOURS)}
++            device = entitlements.activate_device(conn, license, body.device_id, body.device_name, body.app_version) if body.device_id or license['device_limit'] else None
++            claims = {'sub':str(license['account_id']), 'ver':license['session_version'], 'license_id':license['id'], 'license_ver':license['code_version'], 'license_device_id':device['id'] if device else None, 'device_id':body.device_id, 'device_ver':device['session_version'] if device else None, 'iat':now, 'exp':now+timedelta(hours=core.TOKEN_TTL_HOURS)}
+             core.audit(conn, license['account_id'], 'license_login', 'license', license['id'])
+             conn.commit()
+-            return {'access_token':jwt.encode(claims,core.JWT_SECRET,algorithm='HS256'), 'account':{'id':license['account_id'],'display_name':license['display_name'],'role':license['role'],'licensed':True,'license_expires_at':license['expires_at']}}
++            return {'access_token':jwt.encode(claims,core.JWT_SECRET,algorithm='HS256'), 'account':{'id':license['account_id'],'display_name':license['display_name'],'role':license['role'],**entitlements.license_fields(license,body.device_id)}}
+ 
+     @app.post('/api/admin/firm-licenses', status_code=201)
+     def firm_license(body: FirmLicenseInput, admin=Depends(admin_dep), pool=Depends(db)):
++        entitlements.validate_trial(body.license_kind,body.duration_days)
+         with pool.connection() as conn:
+             if body.account_id:
+                 account = conn.execute("SELECT * FROM accounts WHERE id=%s AND role='customer' AND archived=FALSE AND disabled=FALSE", (body.account_id,)).fetchone()
+@@ -185,16 +220,19 @@
+                 audit_detail(conn,admin,'firm_created','account',account['id'],{'name':name})
+             code = create_code()
+             expires = datetime.now(timezone.utc)+timedelta(days=body.duration_days) if body.duration_days else None
+-            license = conn.execute('INSERT INTO licenses(account_id,expires_at,code_hash,code_cipher,code_version) VALUES (%s,%s,%s,%s,1) RETURNING id,account_id,expires_at',
+-                                   (account['id'],expires,code_hash(code),cipher(core.JWT_SECRET).encrypt(code.encode()).decode())).fetchone()
+-            audit_detail(conn,admin,'license_created','license',license['id'],{'firm':account['display_name'],'expires_at':str(expires)})
++            license = conn.execute('''INSERT INTO licenses(account_id,expires_at,code_hash,code_cipher,code_version,support_enabled,license_kind,device_limit)
++                VALUES (%s,%s,%s,%s,1,%s,%s,%s) RETURNING id,account_id,expires_at,support_enabled,license_kind,device_limit''',
++                                   (account['id'],expires,code_hash(code),cipher(core.JWT_SECRET).encrypt(code.encode()).decode(),body.support_enabled,body.license_kind,body.device_limit)).fetchone()
++            audit_detail(conn,admin,'license_created','license',license['id'],{'firm':account['display_name'],'expires_at':str(expires),'support_enabled':body.support_enabled,'license_kind':body.license_kind,'device_limit':body.device_limit})
+             conn.commit()
+             return {**license,'display_name':account['display_name'],'code':code}
+ 
+     @app.get('/api/admin/license-codes')
+     def license_codes(admin=Depends(admin_dep), pool=Depends(db)):
+         with pool.connection() as conn:
+-            rows = conn.execute('SELECT l.*,a.display_name,a.archived AS firm_archived FROM licenses l JOIN accounts a ON a.id=l.account_id ORDER BY l.id DESC').fetchall()
++            rows = conn.execute('''SELECT l.*,a.display_name,a.archived AS firm_archived,
++                (SELECT count(*) FROM license_devices d WHERE d.license_id=l.id AND d.revoked_at IS NULL) AS active_devices
++                FROM licenses l JOIN accounts a ON a.id=l.account_id ORDER BY l.id DESC''').fetchall()
+             for row in rows:
+                 row['code'] = cipher(core.JWT_SECRET).decrypt(row.pop('code_cipher').encode()).decode() if row['code_cipher'] else None
+                 row.pop('code_hash',None)
+@@ -216,15 +254,49 @@
+                 conn.execute('UPDATE licenses SET code_hash=%s,code_cipher=%s,code_version=code_version+1 WHERE id=%s',
+                              (code_hash(code),cipher(core.JWT_SECRET).encrypt(code.encode()).decode(),license_id))
+             elif body.action=='renew':
++                entitlements.validate_trial(row['license_kind'],body.duration_days)
+                 expires = max(row['expires_at'] or datetime.now(timezone.utc),datetime.now(timezone.utc))+timedelta(days=body.duration_days) if body.duration_days else None
+                 conn.execute('UPDATE licenses SET expires_at=%s,revoked=FALSE,archived=FALSE WHERE id=%s',(expires,license_id))
+             elif body.action=='revoke':
+                 conn.execute('UPDATE licenses SET revoked=TRUE,code_version=code_version+1 WHERE id=%s',(license_id,))
++            elif body.action=='configure':
++                kind=body.license_kind or row['license_kind']
++                if kind=='trial' and (row['license_kind']!='trial' or body.duration_days is not None):
++                    entitlements.validate_trial(kind,body.duration_days)
++                active=conn.execute('SELECT count(*) AS n FROM license_devices WHERE license_id=%s AND revoked_at IS NULL',(license_id,)).fetchone()['n']
++                if body.device_limit and active>body.device_limit:
++                    raise HTTPException(409,'Önce aktif cihazları yeni sınırın altına indirin.')
++                expires=datetime.now(timezone.utc)+timedelta(days=body.duration_days) if body.duration_days else row['expires_at']
++                conn.execute('UPDATE licenses SET support_enabled=%s,license_kind=%s,device_limit=%s,expires_at=%s WHERE id=%s',
++                             (row['support_enabled'] if body.support_enabled is None else body.support_enabled,kind,row['device_limit'] if body.device_limit is None else body.device_limit,expires,license_id))
+             else:
+                 conn.execute('UPDATE licenses SET archived=%s,code_version=code_version+1 WHERE id=%s',(body.action=='archive',license_id))
+-            audit_detail(conn,admin,'license_'+body.action,'license',license_id,{'firm':row['display_name'],'duration_days':body.duration_days})
++            audit_detail(conn,admin,'license_'+body.action,'license',license_id,{'firm':row['display_name'],'duration_days':body.duration_days,'support_enabled':body.support_enabled,'license_kind':body.license_kind,'device_limit':body.device_limit})
+             conn.commit()
+             return {'success':True,'code':code}
++
++    @app.get('/api/admin/licenses/{license_id}/devices')
++    def license_devices(license_id:int, admin=Depends(admin_dep), pool=Depends(db)):
++        with pool.connection() as conn:
++            if not conn.execute('SELECT id FROM licenses WHERE id=%s',(license_id,)).fetchone():
++                raise HTTPException(404,'Lisans bulunamadı.')
++            return conn.execute('SELECT id,license_id,device_id,device_name,app_version,first_seen,last_seen,revoked_at FROM license_devices WHERE license_id=%s ORDER BY last_seen DESC',(license_id,)).fetchall()
++
++    @app.post('/api/admin/licenses/{license_id}/devices/{device_id}/manage')
++    def manage_device(license_id:int, device_id:str, body:DeviceActionInput, admin=Depends(admin_dep), pool=Depends(db)):
++        with pool.connection() as conn:
++            license=conn.execute('SELECT * FROM licenses WHERE id=%s FOR UPDATE',(license_id,)).fetchone()
++            device=conn.execute('SELECT * FROM license_devices WHERE license_id=%s AND device_id=%s',(license_id,device_id)).fetchone()
++            if not license or not device:
++                raise HTTPException(404,'Lisans cihazı bulunamadı.')
++            if body.action=='restore' and device['revoked_at'] and license['device_limit']:
++                active=conn.execute('SELECT count(*) AS n FROM license_devices WHERE license_id=%s AND revoked_at IS NULL',(license_id,)).fetchone()['n']
++                if active>=license['device_limit']:
++                    raise HTTPException(409,'Lisansın cihaz sınırına ulaşıldı.')
++            conn.execute('UPDATE license_devices SET revoked_at=CASE WHEN %s THEN now() ELSE NULL END,session_version=session_version+CASE WHEN %s THEN 1 ELSE 0 END WHERE id=%s',(body.action=='revoke',body.action=='revoke',device['id']))
++            audit_detail(conn,admin,'license_device_'+body.action,'license',license_id,{'device_id':device_id,'device_name':device['device_name']})
++            conn.commit()
++            return {'success':True}
+ 
+     @app.post('/api/admin/accounts/{account_id}/manage')
+     def manage_account(account_id:int, body:AccountActionInput, admin=Depends(admin_dep), pool=Depends(db)):
+@@ -325,12 +397,21 @@
+             account=core.current_account(HTTPAuthorizationCredentials(scheme='Bearer',credentials=header[7:]),pool)
+         with pool.connection() as conn:
+             conn.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s, 62))',(body.device_id,))
+-            premium=bool(account and (account['role'] in ('admin','technician') or core.licensed_customer(conn,account['id'])))
++            if account and account.get('device_id') and account['device_id']!=body.device_id:
++                raise HTTPException(403,'Bağlantı bu lisansın etkinleştirildiği cihazdan başlatılmalı.')
++            premium=bool(account and (account['role'] in ('admin','technician') or account.get('licensed')))
+             now=datetime.now(timezone.utc)
+-            existing=conn.execute('SELECT * FROM connection_leases WHERE session_id=%s',(body.session_id,)).fetchone()
++            alias=conn.execute('SELECT parent_session_id FROM connection_children WHERE session_id=%s',(body.session_id,)).fetchone()
++            if alias and (not body.parent_session_id or str(alias['parent_session_id'])!=body.parent_session_id):
++                raise HTTPException(409,'Dosya aktarım bağlantısı başka bir oturuma bağlı.')
++            canonical=body.parent_session_id or body.session_id
++            existing=conn.execute('SELECT * FROM connection_leases WHERE session_id=%s',(canonical,)).fetchone()
++            if body.parent_session_id and (not existing or canonical==body.session_id or conn.execute('SELECT 1 FROM connection_leases WHERE session_id=%s',(body.session_id,)).fetchone()):
++                raise HTTPException(409,'Dosya aktarımı için açık ana bağlantı bulunamadı.')
+             if existing:
+-                if existing['device_id']!=body.device_id or existing['peer_id']!=body.peer_id or existing['account_id']!=(account['id'] if account else None):
+-                    raise HTTPException(409,'Bağlantı kimliği zaten kullanılıyor.')
++                legacy_unbound=bool(account and account.get('license_id') and account.get('device_limit')==0 and not account.get('license_device_id') and existing['license_id'] is None and existing['license_device_id'] is None)
++                if existing['device_id']!=body.device_id or existing['peer_id']!=body.peer_id or existing['account_id']!=(account['id'] if account else None) or (not legacy_unbound and (existing['license_id']!=(account.get('license_id') if account else None) or existing['license_device_id']!=(account.get('license_device_id') if account else None))):
++                    raise HTTPException(409,'Bağlantı kimliği zaten kullanılıyor veya farklı bir lisansa bağlı.')
+                 if existing['ended_at'] or existing['expires_at']<=now:
+                     raise HTTPException(409,'Bu bağlantının süresi doldu.')
+                 if existing['premium'] and not premium:
+@@ -342,21 +423,30 @@
+                     previous=conn.execute('SELECT * FROM connection_leases WHERE device_id=%s AND premium=FALSE AND cooldown_until>now() AND (ended_at IS NULL OR expires_at<=now()) ORDER BY cooldown_until DESC LIMIT 1',(body.device_id,)).fetchone()
+                     if previous:
+                         wait=max(1,int((previous['cooldown_until']-now).total_seconds()))
+-                        raise HTTPException(429,{'message':'Lisanssız kullanımda tek bağlantı ve 5 dakika sonrası 1 dakika ara uygulanır.','retry_after':wait})
++                        raise HTTPException(429,{'message':'Lisanssız kullanımda tek bağlantı, 5 dakika sonrası 1 dakika ara ve 30 MB dosya gönderim sınırı uygulanır.','retry_after':wait})
+                 expires=now+timedelta(days=3650) if premium else now+timedelta(minutes=5)
+-                conn.execute('INSERT INTO connection_leases(session_id,device_id,account_id,peer_id,premium,expires_at,cooldown_until) VALUES (%s,%s,%s,%s,%s,%s,%s)',
+-                             (body.session_id,body.device_id,account['id'] if account else None,body.peer_id,premium,expires,expires+timedelta(minutes=1)))
++                conn.execute('INSERT INTO connection_leases(session_id,device_id,account_id,peer_id,premium,expires_at,cooldown_until,license_id,license_device_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',
++                             (body.session_id,body.device_id,account['id'] if account else None,body.peer_id,premium,expires,expires+timedelta(minutes=1),account.get('license_id') if account else None,account.get('license_device_id') if account else None))
++            if body.parent_session_id:
++                conn.execute('INSERT INTO connection_children(session_id,parent_session_id) VALUES (%s,%s) ON CONFLICT(session_id) DO NOTHING',(body.session_id,canonical))
+             permit_exp=min(expires,now+timedelta(seconds=90))
+-            payload=json.dumps({'session_id':body.session_id,'device_id':body.device_id,'peer_id':body.peer_id,'premium':premium,'exp':int(permit_exp.timestamp()),'connection_expires':int(expires.timestamp())},separators=(',',':')).encode()
++            payload=json.dumps({'session_id':body.session_id,'policy_session_id':canonical,'device_id':body.device_id,'peer_id':body.peer_id,'premium':premium,'exp':int(permit_exp.timestamp()),'connection_expires':int(expires.timestamp())},separators=(',',':')).encode()
+             signed=base64.b64encode(payload).decode()+'.'+base64.b64encode(signing_key(core.JWT_SECRET).sign(payload)).decode()
+             conn.commit()
+-            return {'permit':signed,'premium':premium,'expires_at':expires,'refresh_after':30}
++            return {'permit':signed,'premium':premium,'policy_session_id':canonical,'expires_at':expires,'refresh_after':30}
+ 
+     @app.post('/api/connections/{session_id}/end')
+     def end_connection(session_id:str, request:Request, pool=Depends(db)):
++        try:
++            session_id=str(UUID(session_id))
++        except ValueError:
++            raise HTTPException(422,'Geçersiz bağlantı kimliği.')
+         # Ending a lease can never increase the allowance or erase the enforced cooldown.
+         with pool.connection() as conn:
+-            conn.execute('UPDATE connection_leases SET ended_at=COALESCE(ended_at,now()) WHERE session_id=%s',(session_id,))
++            child=conn.execute('DELETE FROM connection_children WHERE session_id=%s RETURNING session_id',(session_id,)).fetchone()
++            if not child:
++                conn.execute('UPDATE connection_leases SET ended_at=COALESCE(ended_at,now()) WHERE session_id=%s',(session_id,))
++                conn.execute('DELETE FROM connection_children WHERE parent_session_id=%s',(session_id,))
+             conn.commit()
+             return {'ended':True}
+ 
+@@ -371,6 +461,7 @@
+ 
+ 
+ def ticket_rows(conn,account):
++    entitlements.require_support(conn,account)
+     staff=account['role'] in ('admin','technician')
+     return conn.execute('''SELECT t.*,a.display_name AS customer_name,a.archived AS customer_archived,s.display_name AS assigned_name,
+         (SELECT count(*) FROM ticket_messages m WHERE m.ticket_id=t.id) AS message_count,
+--- before/deploy\forlan-support\app\static\admin.css
++++ after/deploy\forlan-support\app\static\admin.css
+@@ -1,3 +1,4 @@
+ :root{font-family:Inter,"Segoe UI",Arial,sans-serif;color:#17243a;background:#f2f5fa;font-synthesis:none;text-rendering:optimizeLegibility}*{box-sizing:border-box}body{margin:0;min-height:100vh}.shell{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:28px 0 60px}.brand{display:flex;align-items:center;gap:12px;margin:0 0 24px;color:#13233c}.brand-mark{display:grid;place-items:center;width:46px;height:46px;border-radius:13px;background:#0875ee;color:white;font-size:30px;font-weight:900}.brand strong,.brand small{display:block;letter-spacing:1.5px}.brand strong{font-size:20px}.brand small{margin-top:2px;color:#66758a;font-size:10px;font-weight:700}.panel{padding:24px;border:1px solid #d9e1ec;border-radius:16px;background:#fff;box-shadow:0 8px 28px #1e35520c}.login-panel{max-width:480px;margin:48px auto}.login-panel>p,.toolbar p,.hint{color:#607089;line-height:1.5}h1,h2,p{margin-top:0}h1{margin-bottom:6px;font-size:24px}h2{margin-bottom:18px;font-size:18px}.columns{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}form{display:grid;gap:14px}label{display:grid;gap:6px;color:#43536b;font-size:13px;font-weight:600}input,select{width:100%;min-height:43px;padding:10px 12px;border:1px solid #cbd5e2;border-radius:9px;background:#fff;color:#16243a;font:inherit}input:focus,select:focus{outline:3px solid #0875ee2b;border-color:#0875ee}button{min-height:42px;padding:9px 15px;border:0;border-radius:9px;background:#0875ee;color:#fff;font:inherit;font-weight:700;cursor:pointer}button:hover{background:#0667d2}button:disabled{opacity:.55;cursor:wait}.secondary{border:1px solid #ccd6e4;background:#fff;color:#273a55}.secondary:hover{background:#eef3f9}.toolbar,.section-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}.toolbar{margin-bottom:16px}.toolbar h1,.toolbar p{margin-bottom:3px}.table-panel{margin-top:16px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;text-align:left}th,td{padding:11px 10px;border-bottom:1px solid #e7ebf1;white-space:nowrap}th{color:#69788d;font-size:12px}td{font-size:14px}.muted,.hint{color:#728198;font-size:12px}.hint{margin:14px 0 0}.notice{position:sticky;top:12px;z-index:2;margin:0 auto 12px;padding:12px 16px;border:1px solid #f2c982;border-radius:10px;background:#fff7e8;color:#795318}.notice.error{border-color:#f0b8b8;background:#fff0f0;color:#9d2525}.notice.success{border-color:#a7ddc7;background:#edfff6;color:#17613f}[hidden]{display:none!important}.table-action{min-height:32px;padding:5px 9px;font-size:12px}@media(max-width:700px){.columns{grid-template-columns:1fr}.shell{width:min(100% - 20px,560px);padding-top:18px}.panel{padding:18px}.toolbar{align-items:flex-start}.table-panel{padding:14px}}
+ 
+-.action-group{display:flex;flex-wrap:wrap;gap:6px;min-width:240px}.license-code{display:flex;gap:8px;align-items:center}.license-code code{font-size:13px;color:#69e4c2;white-space:nowrap}.danger{color:#ff919b!important;border-color:#693745!important}.toolbar input#search{max-width:400px}.toolbar label{display:flex;align-items:center;gap:8px}.toolbar input[type=checkbox]{width:auto}
++.action-group{display:flex;flex-wrap:wrap;gap:6px;min-width:240px}.license-code{display:flex;gap:8px;align-items:center}.license-code code{font-size:13px;color:#145084;white-space:nowrap}.danger{color:#a5283d!important;border-color:#d7a6af!important}.toolbar input#search{max-width:400px}.toolbar label{display:flex;align-items:center;gap:8px}.toolbar input[type=checkbox]{width:auto}
++.check-option{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #dce4ee;border-radius:10px;background:#f7f9fd}.check-option input{width:18px;min-height:18px;margin:2px 0 0;accent-color:#0875ee}.check-option span{line-height:1.45}label small{display:block;color:#6b7d94;font-size:11px;line-height:1.45;font-weight:400}.check-option small{margin-top:4px}.plan-pill{display:inline-block;padding:5px 8px;border-radius:8px;background:#edf2f8;color:#43536b;font-size:11px;font-weight:700}.support-plan{background:#e6f6f1;color:#176650}.license-dialog{width:min(440px,calc(100% - 32px));padding:24px;border:1px solid #d9e1ec;border-radius:16px;box-shadow:0 24px 80px #13233c38}.license-dialog::backdrop{background:#10213b80;backdrop-filter:blur(3px)}.license-dialog h2{margin:0}.license-dialog .hint{margin:0}.license-dialog .section-heading button{min-width:34px;padding:4px 10px;font-size:20px}.dialog-error{margin:0;padding:10px;border-radius:8px;background:#fff0f0;color:#9d2525;font-size:12px}#devices-panel{scroll-margin-top:18px}#devices-panel .section-heading{margin-bottom:14px}
+--- before/deploy\forlan-support\app\static\admin.js
++++ after/deploy\forlan-support\app\static\admin.js
+@@ -1,10 +1,10 @@
+ (() => {
+-  let token = '', accounts = [], licenses = [], history = [];
++  let token = '', accounts = [], licenses = [], history = [], configuredLicense = null, deviceLicense = null;
+   const $ = id => document.getElementById(id);
+   const date = v => v ? new Date(v).toLocaleString('tr-TR') : 'Süresiz';
+   const roles = {admin:'Yönetici',technician:'Teknisyen',customer:'Firma'};
+   function notice(text,kind='') { $('notice').textContent=text; $('notice').className=`notice ${kind}`; $('notice').hidden=!text; }
+-  function logout() { token=''; $('admin-panel').hidden=true; $('login-panel').hidden=false; }
++  function logout() { token=''; configuredLicense=null; deviceLicense=null; $('devices-panel').hidden=true; if($('license-settings-dialog').open)$('license-settings-dialog').close(); $('admin-panel').hidden=true; $('login-panel').hidden=false; }
+   async function api(path,method='GET',body) {
+     const r=await fetch(path,{method,cache:'no-store',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},...(body?{body:JSON.stringify(body)}:{})});
+     const data=await r.json();
+@@ -26,8 +26,14 @@
+     [accounts,licenses,history]=await Promise.all([api('/api/admin/accounts'),api('/api/admin/license-codes'),api('/api/admin/audit')]);
+     const select=$('customer-select'),prev=select.value;select.replaceChildren(new Option('Yeni firma oluştur',''));
+     accounts.filter(a=>a.role==='customer'&&!a.archived&&!a.disabled).forEach(a=>select.append(new Option(a.display_name,String(a.id))));select.value=prev;firmChanged();render();
++    if(deviceLicense){deviceLicense=licenses.find(l=>l.id===deviceLicense.id)||null;if(deviceLicense)await renderDevices();else $('devices-panel').hidden=true;}
+   }
+   function firmChanged(){ $('firm-name-label').hidden=!!$('customer-select').value; }
++  function licenseKindChanged(){const trial=$('license-kind').value==='trial',duration=$('license-duration');duration.required=trial;duration.max=trial?'90':'36500';duration.placeholder=trial?'1–90 gün':'Süresiz için boş bırakın';if(trial&&!duration.value)duration.value='7';}
++  function planLabel(l){const pill=document.createElement('span');pill.className=`plan-pill${l.support_enabled?' support-plan':''}`;pill.textContent=(l.license_kind==='trial'?'Deneme · ':'')+(l.support_enabled?'Kullanım + destek':'Yalnız kullanım');return pill;}
++  function configureLicense(l){configuredLicense=l;const form=$('license-settings-form');form.elements.device_limit.value=l.device_limit;form.elements.support_enabled.checked=!!l.support_enabled;$('license-settings-error').hidden=true;$('license-settings-firm').textContent=l.display_name+' · '+(l.license_kind==='trial'?'Deneme lisansı':'Standart lisans');$('license-settings-dialog').showModal();}
++  async function showDevices(l){deviceLicense=l;await renderDevices();$('devices-panel').scrollIntoView({behavior:'smooth',block:'start'});}
++  async function renderDevices(){const l=deviceLicense;if(!l)return;const rows=await api(`/api/admin/licenses/${l.id}/devices`);if(!deviceLicense||deviceLicense.id!==l.id)return;$('devices-panel').hidden=false;$('devices-heading').textContent=l.display_name+' · Lisans cihazları';$('devices').replaceChildren(rows.length?table(['Cihaz','Kimlik','Uygulama sürümü','İlk kullanım','Son görülme','Durum','İşlemler'],rows.map(d=>[d.device_name||'Adsız cihaz',d.device_id,d.app_version||'—',date(d.first_seen),date(d.last_seen),d.revoked_at?'Engelli':'Etkin',actions([button(d.revoked_at?'Yeniden izin ver':'Cihazı kaldır',async()=>{const action=d.revoked_at?'restore':'revoke';if(!confirm(`${d.device_name||d.device_id}: ${action==='revoke'?'Bu cihazın lisans erişimi ve oturumu kapatılacak.':'Bu cihazın tekrar giriş yapmasına izin verilecek.'}`))return;await api(`/api/admin/licenses/${l.id}/devices/${encodeURIComponent(d.device_id)}/manage`,'POST',{action});await refresh();notice('Cihaz yetkisi güncellendi.','success');},!d.revoked_at)])])):document.createTextNode('Bu lisans henüz bir cihazda etkinleştirilmedi.'));}
+   async function accountAction(a,action) {
+     let confirmation='';
+     if(action==='delete') { confirmation=prompt(`${a.display_name} kalıcı silinecek. Müşteriyse ${a.license_count ?? 0} lisans ve ${a.ticket_count ?? 0} destek kaydı da silinir. Teknisyense işler havuza döner; konuşma ve işlem geçmişi korunur. Onaylamak için adını aynen yazın:`, '');if(confirmation===null)return; }
+@@ -36,7 +42,8 @@
+   }
+   async function licenseAction(l,action) {
+     const body={action};
+-    if(action==='renew') {const value=prompt('Kaç gün uzatılsın? Süresiz için boş bırakın.','365');if(value===null)return;if(value!==''){const n=Number(value);if(!Number.isInteger(n)||n<1||n>36500)throw new Error('1–36500 arasında gün sayısı girin.');body.duration_days=n;}}
++    if(action==='renew') {const trial=l.license_kind==='trial',value=prompt(trial?'Deneme kaç gün uzatılsın? 1–90 gün.':'Kaç gün uzatılsın? Süresiz için boş bırakın.',trial?'7':'365');if(value===null)return;if(value!==''||trial){const n=Number(value);if(!Number.isInteger(n)||n<1||n>(trial?90:36500))throw new Error(trial?'1–90 arasında gün sayısı girin.':'1–36500 arasında gün sayısı girin.');body.duration_days=n;}}
++    else if(action==='standard'){if(!confirm(`${l.display_name}: Deneme lisansı standart lisansa dönüştürülsün mü? Bitiş tarihi korunur; Uzat seçeneğiyle değiştirebilirsiniz.`))return;body.action='configure';body.license_kind='standard';}
+     else if(action==='delete'){body.confirmation=prompt(`${l.display_name} lisansı kalıcı silinecek. Onay için firma adını yazın:`, '');if(body.confirmation===null)return;}
+     else if(!confirm(`${l.display_name}: ${action==='rotate'?'Kod yenilenecek; eski kod ve ona bağlı oturumlar kapanacak.':action==='revoke'?'Lisans iptal edilecek.':action==='archive'?'Lisans arşivlenecek.':'Lisans arşivden çıkarılacak.'}`))return;
+     await api(`/api/admin/licenses/${l.id}/manage`,'POST',body);await refresh();notice('Lisans işlemi tamamlandı. Güncel kod listede görünüyor.','success');
+@@ -49,10 +56,11 @@
+       button(a.archived?'Geri al':'Arşivle',()=>accountAction(a,a.archived?'restore':'archive')),
+       button('Kalıcı sil',()=>accountAction(a,'delete'),true)
+     ])])));
+-    $('licenses').replaceChildren(table(['Firma','Lisans kodu','Bitiş','Durum','İşlemler'],licenses.filter(l=>(archived||(!l.archived&&!l.firm_archived))&&matches(l.display_name+' '+(l.code||''))).map(l=>{
++    $('licenses').replaceChildren(table(['Firma','Lisans kodu','Haklar','Cihazlar','Bitiş','Durum','İşlemler'],licenses.filter(l=>(archived||(!l.archived&&!l.firm_archived))&&matches(l.display_name+' '+(l.code||''))).map(l=>{
+       const code=document.createElement('div');code.className='license-code';const text=document.createElement('code');text.textContent=l.code||'Henüz kod üretilmedi';code.append(text);
+       if(l.code)code.append(button('Kopyala',async()=>{await navigator.clipboard.writeText(l.code);notice('Lisans kodu kopyalandı.','success');}));
+-      return [l.display_name,code,date(l.expires_at),l.archived?'Arşiv':l.revoked?'İptal':l.expires_at&&new Date(l.expires_at)<=new Date()?'Süresi dolmuş':'Aktif',actions([
++      return [l.display_name,code,planLabel(l),`${l.active_devices??0} / ${l.device_limit===0?'Sınırsız':l.device_limit}`,date(l.expires_at),l.archived?'Arşiv':l.revoked?'İptal':l.expires_at&&new Date(l.expires_at)<=new Date()?'Süresi dolmuş':'Aktif',actions([
++        button('Haklar',()=>configureLicense(l)),button('Cihazlar',()=>showDevices(l)),...(l.license_kind==='trial'?[button('Standart lisansa dönüştür',()=>licenseAction(l,'standard'))]:[]),
+         button('Uzat',()=>licenseAction(l,'renew')),button(l.code?'Kodu yenile':'Kod üret',()=>licenseAction(l,'rotate')),
+         button('İptal et',()=>licenseAction(l,'revoke')),button(l.archived?'Geri al':'Arşivle',()=>licenseAction(l,l.archived?'restore':'archive')),button('Kalıcı sil',()=>licenseAction(l,'delete'),true)
+       ])];
+@@ -61,7 +69,9 @@
+   }
+   $('login-form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,b=form.querySelector('button');b.disabled=true;try{const values=Object.fromEntries(new FormData(form));const r=await api('/api/auth/login','POST',values);if(r.account.role!=='admin')throw new Error('Yönetici hesabı gerekli.');token=r.access_token;$('identity').textContent=r.account.display_name+' · Yönetici';$('admin-panel').hidden=false;$('login-panel').hidden=true;form.reset();await refresh();notice('');}catch(err){logout();notice(err.message,'error');}finally{b.disabled=false;}};
+   $('account-form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,b=form.querySelector('button');b.disabled=true;try{await api('/api/admin/accounts','POST',Object.fromEntries(new FormData(form)));form.reset();await refresh();notice('Yetkili hesap oluşturuldu.','success');}catch(err){notice(err.message,'error');}finally{b.disabled=false;}};
+-  $('license-form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,b=form.querySelector('button');b.disabled=true;try{const v=Object.fromEntries(new FormData(form));const body={display_name:v.display_name};if(v.account_id)body.account_id=Number(v.account_id);if(v.duration_days)body.duration_days=Number(v.duration_days);await api('/api/admin/firm-licenses','POST',body);form.reset();await refresh();notice('Lisans üretildi. Kodu aşağıdaki listeden kopyalayabilirsiniz.','success');}catch(err){notice(err.message,'error');}finally{b.disabled=false;}};
++  $('license-form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,b=form.querySelector('button');b.disabled=true;try{const v=Object.fromEntries(new FormData(form));const body={display_name:v.display_name,license_kind:v.license_kind,device_limit:Number(v.device_limit),support_enabled:form.elements.support_enabled.checked};if(v.account_id)body.account_id=Number(v.account_id);if(v.duration_days)body.duration_days=Number(v.duration_days);await api('/api/admin/firm-licenses','POST',body);form.reset();licenseKindChanged();await refresh();notice('Lisans üretildi. Kodu aşağıdaki listeden kopyalayabilirsiniz.','success');}catch(err){notice(err.message,'error');}finally{b.disabled=false;}};
++  $('license-settings-form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,l=configuredLicense,b=form.querySelector('button[type=submit]');if(!l)return;b.disabled=true;$('license-settings-error').hidden=true;try{await api(`/api/admin/licenses/${l.id}/manage`,'POST',{action:'configure',device_limit:Number(form.elements.device_limit.value),support_enabled:form.elements.support_enabled.checked});$('license-settings-dialog').close();configuredLicense=null;await refresh();notice('Lisans hakları güncellendi.','success');}catch(err){$('license-settings-error').textContent=err.message;$('license-settings-error').hidden=false;}finally{b.disabled=false;}};
++  $('license-settings-close').onclick=()=>{$('license-settings-dialog').close();configuredLicense=null;};$('devices-close').onclick=()=>{$('devices-panel').hidden=true;deviceLicense=null;};$('license-kind').onchange=licenseKindChanged;
+   $('logout').onclick=()=>{logout();notice('Oturum kapatıldı.');};$('refresh').onclick=()=>refresh().catch(e=>notice(e.message,'error'));
+   $('search').oninput=render;$('show-archived').onchange=render;$('customer-select').onchange=firmChanged;
+ })();
+--- before/deploy\forlan-support\app\static\index.html
++++ after/deploy\forlan-support\app\static\index.html
+@@ -39,7 +39,10 @@
+           <form id="license-form">
+             <label>Firma<select name="account_id" id="customer-select"></select></label>
+             <label id="firm-name-label">Yeni firma adı<input name="display_name" maxlength="160"></label>
+-            <label>Lisans süresi (gün)<input name="duration_days" type="number" min="1" max="36500" placeholder="Süresiz için boş bırakın"></label>
++            <label>Lisans türü<select name="license_kind" id="license-kind"><option value="standard">Standart lisans</option><option value="trial">Deneme lisansı</option></select></label>
++            <label>Lisans süresi (gün)<input name="duration_days" id="license-duration" type="number" min="1" max="36500" placeholder="Süresiz için boş bırakın"></label>
++            <label>Cihaz sayısı<input name="device_limit" type="number" min="0" max="1000" value="1" required><small>0 = sınırsız cihaz. Her cihaz ayrı etkinleştirilir.</small></label>
++            <label class="check-option"><input name="support_enabled" type="checkbox"><span>Forlan müşterimiz — destek hizmeti dahil<small>Kapalıysa yalnız lisanslı kullanım sunulur; destek talepleri ve mesajlaşma görünmez.</small></span></label>
+             <button type="submit">Lisans kodu üret</button>
+           </form>
+           <p class="hint">Müşteri yalnız lisans koduyla giriş yapar. Mevcut firmaya da yeni lisans ekleyebilirsiniz. Kodlar aşağıdaki lisans listesinde saklanır.</p>
+@@ -48,8 +51,19 @@
+       <section class="panel toolbar"><input id="search" placeholder="Firma, teknisyen veya lisans kodu ara"><label><input id="show-archived" type="checkbox"> Arşivlenenleri göster</label><button id="refresh" class="secondary">Yenile</button></section>
+       <section class="panel table-panel"><h2>Firmalar ve yetkili hesaplar</h2><div id="accounts" class="table-wrap"></div></section>
+       <section class="panel table-panel"><h2>Lisanslar</h2><div id="licenses" class="table-wrap"></div></section>
++      <section id="devices-panel" class="panel table-panel" hidden><div class="section-heading"><div><h2 id="devices-heading">Lisans cihazları</h2><p class="hint">Cihazı kaldırmak oturumunu kapatır ve yerini boşaltır. Yeniden izin vermeden aynı cihaz bu lisansla giriş yapamaz.</p></div><button id="devices-close" class="secondary" type="button">Kapat</button></div><div id="devices" class="table-wrap"></div></section>
+       <section class="panel table-panel"><h2>İşlem geçmişi</h2><p class="hint">Son 500 işlem gösterilir. Lisans kodları ve parolalar işlem geçmişine yazılmaz.</p><div id="audit" class="table-wrap"></div></section>
+     </section>
+   </main>
++  <dialog id="license-settings-dialog" class="license-dialog">
++    <form id="license-settings-form">
++      <div class="section-heading"><h2>Lisans hakları</h2><button id="license-settings-close" type="button" class="secondary" aria-label="Kapat">×</button></div>
++      <p id="license-settings-firm" class="hint"></p>
++      <p id="license-settings-error" class="dialog-error" role="alert" hidden></p>
++      <label>Cihaz sayısı<input name="device_limit" type="number" min="0" max="1000" required><small>0 = sınırsız cihaz. Sınırı düşürmek için gerekirse önce cihaz listesinden yer boşaltın.</small></label>
++      <label class="check-option"><input name="support_enabled" type="checkbox"><span>Forlan müşterimiz — destek hizmeti dahil<small>Destek hakkının kapanması mevcut kayıtları silmez.</small></span></label>
++      <button type="submit">Değişiklikleri kaydet</button>
++    </form>
++  </dialog>
+ </body>
+ </html>
+--- before/deploy\forlan-support\README.md
++++ after/deploy\forlan-support\README.md
+@@ -38,17 +38,17 @@
+ - `GET /api/events?after=<cursor>` (authenticated support notifications)
+ - `POST /api/tickets/{id}/connection-request` (staff, active customer license, open ticket)
+ 
+-Administrators and technicians see the shared ticket pool. Customers can only create tickets with an active license and can only read their own tickets. Role and ownership checks run in the API for every request. Account passwords are Argon2 hashes; session tokens expire; login attempts are throttled; privileged changes are recorded in the audit table.
++Administrators and technicians see the shared ticket pool. Customers need a valid license with support included to create tickets and can only read their own active tickets. Role, license entitlement and ownership checks run in the API for every request. Account passwords are Argon2 hashes; session tokens expire; login attempts are throttled; privileged changes are recorded in the audit table.
+ 
+ New support tickets are restricted by the API to the `Yazılım` and `Sistem` categories. Administrators can activate/disable accounts and revoke licenses from the administrator page.
+ 
+-## Desktop support notifications (1.13.0+)
++## Desktop support notifications (1.16.0+)
+ 
+-Customers and technicians must use the updated desktop application and sign in through its support page. Closing the support dialog or hiding the main window keeps that in-memory session and its three-second event polling active. Signing out, quitting the application, or expiry of the session token ends notification delivery until the next sign-in. Credentials are not saved to disk.
++Customers and technicians sign in using **Giriş yap / Lisansı etkinleştir** in the service footer. Support controls are hidden for guests and usage-only licenses. Hiding the main window keeps the in-memory session and polling active. Usage-only sessions poll their license profile without requesting tickets or support events. Signing out, quitting, or expiry of the session token ends notification delivery until the next sign-in. Credentials are not saved to disk.
+ 
+ New licensed customer tickets notify the shared staff pool; incoming messages notify the other participants. Windows notifications are dismissible and hidden after approximately 15 seconds. Windows notification settings and Do not disturb can suppress banners. The supplied message sound is bundled with the application.
+ 
+-New desktop tickets include the current device ID. Staff can use **Müşteriye bağlan** inside an open ticket to send a connection notification to its licensed customer and start the normal remote connection. The connection sound is limited to this path; normal ID connections do not emit it. Existing remote password/approval checks still apply. **Ayarlar → Genel → Destek bildirimleri** lets each user disable the message sound or the ticket connection sound independently.
++New desktop tickets include the activated device ID. Staff can use **Bağlan** inside an open ticket to send a silent connection notification and start the normal remote connection. The connection sound and its asset have been removed. New tickets, incoming messages, technician notifications and ticket status notifications use the message sound; **Ayarlar → Genel → Destek bildirimleri** can disable it. Existing remote password/approval checks still apply.
+ 
+ ## License codes and ticket ownership (1.14.0+)
+ 
+@@ -56,11 +56,21 @@
+ 
+ Renew extends a license, rotate generates a replacement code and invalidates the previous code and its sessions. Archive hides an account or license from daily use; restore returns it. Permanent deletion requires the company/account name. Customer deletion also removes that customer's tickets and licenses; deleting a technician returns their assigned tickets to the pool and preserves their name on old messages and audit records. The last administrator cannot be removed.
+ 
+-The desktop **Destek** tab contains tickets, conversation and history. Connecting from a ticket assigns it to that technician atomically. Its owner can release it or transfer it to an active technician with a required note. Another technician cannot change or connect through the assigned ticket; administrators can intervene. Cancellation also requires a note. License reminders appear during the final 14 days.
++The desktop **Destek** tab shows customers their active tickets and conversations. Staff have Active/Archive lists and operation history. Connecting from a ticket assigns it to that technician atomically. Its owner can release it or use **Teknisyene bildir** to send a required note only to the selected technician; notification does not change ownership. Another technician cannot change or connect through the assigned ticket; administrators can intervene. Cancellation also requires a note. License reminders appear during the final 14 days.
+ 
+-## Outgoing connection policy (1.14.0+)
++## License plans and devices (1.16.0+)
+ 
+-The updated Windows client requests signed permits from `/api/connections/start`. Free initiators can start one connection for five minutes, then wait one minute. Licensed customers and staff can start multiple connections without a duration limit. Receiving a connection is not subject to the initiator's free-use limit.
++New licenses default to usage-only and one device. Select **Forlan müşterimiz — destek hizmeti dahil** for customers entitled to ticket support. A trial requires 1–90 days; the panel defaults to seven days. Support entitlement belongs to the exact license code, so another code for the same company does not grant support access. Staff accounts always have support access.
++
++The **Haklar** action changes support entitlement and device count. Zero means unlimited devices. Existing licenses migrate to support included/unlimited devices to preserve their previous access. Use **Cihazlar** to inspect device name, remote ID, app version and first/last seen time. Removing a device frees its slot and invalidates its sessions; it cannot sign in again until explicitly restored. Restoring does not revive old session tokens. Lowering a positive device cap below the current active count is rejected; remove devices first. Device access changes are recorded in the audit history.
++
++New clients register a device even on unlimited licenses. For compatibility, older clients without device metadata may keep using unlimited licenses, but are absent from inventory and cannot be revoked individually; code revocation still works. A positive device cap requires an updated client and device-bound authentication. These identifiers are application device identities, not hardware attestation.
++
++## Outgoing connection policy (1.16.0+)
++
++The updated Windows client requests signed permits from `/api/connections/start`. Free initiators can start one connection for five minutes, then wait one minute. Each free connection allows 30 MiB of outgoing file content (displayed as 30 MB), shared across file manager and Windows file copy/paste. Text clipboard and incoming files do not consume it. File-manager child channels share the remote connection's signed policy, deadline and quota; reopening them does not reset the allowance. Selections are prechecked where size metadata is available and each actual outgoing block is checked before sending. Retries consume actual repeated file bytes; resumed jobs do not reset the counter.
++
++Valid licensed sessions, including usage-only licenses, and staff can start multiple connections without these duration/file quotas. Their connections are unlimited in both file directions even when the recipient has no license. The authenticated identity is fixed for an active connection; activating another license applies to new connections, so reconnect to replace an existing free connection. Receiving a connection is not subject to the initiator's free-use limit.
+ 
+ Permits are signed with Ed25519, bound to the session, device and peer IDs, and validated by the Windows core. They are refreshed every 30 seconds and expire after at most 90 seconds without renewal. Starting a connection requires API access. The server retains free-session deadlines and cooldowns across client restarts. These controls apply to the new official client: older executables and modified clients are not restricted by the stock RustDesk signaling server. This is not a tamper-proof signaling-server license enforcement system.
+ 
+--- before/deploy\forlan-support\tests\test_authorization.py
++++ after/deploy\forlan-support\tests\test_authorization.py
+@@ -44,11 +44,11 @@
+     def test_customer_can_only_access_their_own_ticket(self):
+         ticket = {"id": 7, "customer_id": 11}
+         self.assertEqual(
+-            visible_ticket(_Connection(ticket), 7, {"id": 11, "role": "customer"}),
++            visible_ticket(_Connection(ticket), 7, {"id": 11, "role": "customer", "license_id":1, "support_enabled":True}),
+             ticket,
+         )
+         with self.assertRaises(HTTPException) as other_customer:
+-            visible_ticket(_Connection(ticket), 7, {"id": 12, "role": "customer"})
++            visible_ticket(_Connection(ticket), 7, {"id": 12, "role": "customer", "license_id":1, "support_enabled":True})
+         self.assertEqual(other_customer.exception.status_code, 404)
+         self.assertEqual(
+             visible_ticket(_Connection(ticket), 7, {"id": 12, "role": "technician"}),
+@@ -66,7 +66,7 @@
+         pool = MagicMock()
+         pool.connection.return_value.__enter__.return_value.execute.return_value.fetchone.return_value = {"cursor": 41}
+         self.assertEqual(
+-            list_events(account={"id": 11, "role": "customer"}, pool=pool),
++            list_events(account={"id": 11, "role": "customer", "license_id":1, "support_enabled":True}, pool=pool),
+             {"cursor": 41, "events": []},
+         )
+ 
+@@ -75,7 +75,7 @@
+         pool.connection.return_value.__enter__.return_value.execute.return_value.fetchone.return_value = {
+             "id": 7, "customer_id": 11, "status": "open", "device_id": "88507774",
+         }
+-        with patch("app.main.licensed_customer", return_value=False):
++        with patch("app.main.entitlements.ticket_has_support", return_value=False):
+             with self.assertRaises(HTTPException) as rejected:
+                 request_ticket_connection(7, staff={"id": 12, "role": "technician"}, pool=pool)
+         self.assertEqual(rejected.exception.status_code, 403)
+--- before/deploy\forlan-support\tests\test_management.py
++++ after/deploy\forlan-support\tests\test_management.py
+@@ -1,3 +1,5 @@
++import base64
++import json
+ import os
+ import unittest
+ from datetime import datetime, timezone
+@@ -42,8 +44,8 @@
+         return route.endpoint(pool=self.pool,**kwargs)
+ 
+     def license(self):
+-        row=self.call('/api/admin/firm-licenses',body=m.FirmLicenseInput(display_name='Hünkar',duration_days=30),admin=self.admin)
+-        result=self.call('/api/auth/license',body=m.LicenseCodeInput(license_code=row['code']),request=self.request)
++        row=self.call('/api/admin/firm-licenses',body=m.FirmLicenseInput(display_name='Hünkar',duration_days=30,support_enabled=True),admin=self.admin)
++        result=self.call('/api/auth/license',body=m.LicenseCodeInput(license_code=row['code'],device_id='123456'),request=self.request)
+         customer=core.current_account(HTTPAuthorizationCredentials(scheme='Bearer',credentials=result['access_token']),self.pool)
+         return row,result,customer
+ 
+@@ -57,8 +59,8 @@
+             core.current_account(HTTPAuthorizationCredentials(scheme='Bearer',credentials=result['access_token']),self.pool)
+         self.assertEqual(e.exception.status_code,401)
+         with self.assertRaises(HTTPException):
+-            self.call('/api/auth/license',body=m.LicenseCodeInput(license_code=row['code']),request=self.request)
+-        fresh=self.call('/api/auth/license',body=m.LicenseCodeInput(license_code=new['code']),request=self.request)
++            self.call('/api/auth/license',body=m.LicenseCodeInput(license_code=row['code'],device_id='123456'),request=self.request)
++        fresh=self.call('/api/auth/license',body=m.LicenseCodeInput(license_code=new['code'],device_id='123456'),request=self.request)
+         self.assertTrue(fresh['account']['licensed'])
+         self.call('/api/admin/accounts/{account_id}/manage',account_id=customer['id'],body=m.AccountActionInput(action='archive'),admin=self.admin)
+         with self.assertRaises(HTTPException):
+@@ -127,7 +129,7 @@
+                 with self.assertRaises(HTTPException) as closed_error:
+                     action()
+                 self.assertEqual(closed_error.exception.status_code,404)
+-        self.assertEqual(core.list_events(after=0,account=customer,pool=self.pool)['events'],[])
++        self.assertEqual([e['kind'] for e in core.list_events(after=0,account=customer,pool=self.pool)['events']],['ticket_status','ticket_status'])
+         self.assertEqual(len(core.list_tickets(self.admin,self.pool)),3)
+ 
+     def test_free_connection_limit_cooldown_and_premium_parallel_sessions(self):
+@@ -151,3 +153,115 @@
+         for peer in ['777777','888888']:
+             r=self.call('/api/connections/start',body=m.LeaseInput(device_id='123456',session_id=str(uuid4()),peer_id=peer),request=req)
+             self.assertTrue(r['premium'])
++
++    def test_usage_only_license_keeps_unlimited_connections_but_cannot_use_support(self):
++        support,_,supported=self.license()
++        ticket=core.create_ticket(core.TicketInput(category='Sistem',title='Destek isteği',description='Ayrıntı'),supported,self.pool)
++        usage=self.call('/api/admin/firm-licenses',body=m.FirmLicenseInput(account_id=supported['id']),admin=self.admin)
++        login=self.call('/api/auth/license',body=m.LicenseCodeInput(license_code=usage['code'],device_id='123456'),request=self.request)
++        customer=core.current_account(HTTPAuthorizationCredentials(scheme='Bearer',credentials=login['access_token']),self.pool)
++        profile=core.me(customer,self.pool)
++        self.assertTrue(profile['licensed'])
++        self.assertFalse(profile['support_enabled'])
++        for action in [lambda:core.list_tickets(customer,self.pool),lambda:core.get_ticket(ticket['id'],customer,self.pool),
++                       lambda:core.list_events(account=customer,pool=self.pool),
++                       lambda:core.add_message(ticket['id'],core.MessageInput(message='Yetkisiz mesaj'),customer,self.pool),
++                       lambda:core.create_ticket(core.TicketInput(category='Sistem',title='Yeni kayıt',description='Ayrıntı'),customer,self.pool),
++                       lambda:self.call('/api/tickets/{ticket_id}/read',ticket_id=ticket['id'],account=customer),
++                       lambda:self.call('/api/tickets/{ticket_id}/history',ticket_id=ticket['id'],account=customer)]:
++            with self.assertRaises(HTTPException) as denied:
++                action()
++            self.assertEqual(denied.exception.status_code,403)
++        req=Request({'type':'http','headers':[(b'authorization',('Bearer '+login['access_token']).encode())],'client':('127.0.0.1',1234)})
++        for peer in ['777777','888888']:
++            self.assertTrue(self.call('/api/connections/start',body=m.LeaseInput(device_id='123456',session_id=str(uuid4()),peer_id=peer),request=req)['premium'])
++        self.call('/api/admin/licenses/{license_id}/manage',license_id=support['id'],body=m.LicenseActionInput(action='configure',support_enabled=False),admin=self.admin)
++        self.call('/api/admin/firm-licenses',body=m.FirmLicenseInput(account_id=supported['id'],support_enabled=True),admin=self.admin)
++        self.assertEqual(core.get_ticket(ticket['id'],self.admin,self.pool)['id'],ticket['id'])
++        with self.assertRaises(HTTPException) as denied_connection:
++            core.request_ticket_connection(ticket['id'],self.tech1,self.pool)
++        self.assertEqual(denied_connection.exception.status_code,403)
++
++    def test_license_device_limit_inventory_and_revocation(self):
++        row,login,customer=self.license()
++        inventory=self.call('/api/admin/licenses/{license_id}/devices',license_id=row['id'],admin=self.admin)
++        self.assertEqual([d['device_id'] for d in inventory],['123456'])
++        with self.assertRaises(HTTPException) as capped:
++            self.call('/api/auth/license',body=m.LicenseCodeInput(license_code=row['code'],device_id='654321'),request=self.request)
++        self.assertEqual(capped.exception.status_code,409)
++        self.call('/api/admin/licenses/{license_id}/devices/{device_id}/manage',license_id=row['id'],device_id='123456',body=m.DeviceActionInput(action='revoke'),admin=self.admin)
++        with self.assertRaises(HTTPException) as old_session:
++            core.current_account(HTTPAuthorizationCredentials(scheme='Bearer',credentials=login['access_token']),self.pool)
++        self.assertEqual(old_session.exception.status_code,401)
++        with self.assertRaises(HTTPException) as blocked_device:
++            self.call('/api/auth/license',body=m.LicenseCodeInput(license_code=row['code'],device_id='123456'),request=self.request)
++        self.assertEqual(blocked_device.exception.status_code,403)
++        second=self.call('/api/auth/license',body=m.LicenseCodeInput(license_code=row['code'],device_id='654321',device_name='Muhasebe',app_version='1.16.0'),request=self.request)
++        with self.assertRaises(HTTPException) as restore_full:
++            self.call('/api/admin/licenses/{license_id}/devices/{device_id}/manage',license_id=row['id'],device_id='123456',body=m.DeviceActionInput(action='restore'),admin=self.admin)
++        self.assertEqual(restore_full.exception.status_code,409)
++        self.call('/api/admin/licenses/{license_id}/devices/{device_id}/manage',license_id=row['id'],device_id='654321',body=m.DeviceActionInput(action='revoke'),admin=self.admin)
++        self.call('/api/admin/licenses/{license_id}/devices/{device_id}/manage',license_id=row['id'],device_id='123456',body=m.DeviceActionInput(action='restore'),admin=self.admin)
++        with self.assertRaises(HTTPException):
++            core.current_account(HTTPAuthorizationCredentials(scheme='Bearer',credentials=login['access_token']),self.pool)
++        fresh=self.call('/api/auth/license',body=m.LicenseCodeInput(license_code=row['code'],device_id='123456'),request=self.request)
++        self.assertTrue(fresh['account']['licensed'])
++        inventory=self.call('/api/admin/licenses/{license_id}/devices',license_id=row['id'],admin=self.admin)
++        other=next(d for d in inventory if d['device_id']=='654321')
++        self.assertEqual((other['device_name'],other['app_version']),('Muhasebe','1.16.0'))
++        self.assertIsNotNone(other['revoked_at'])
++        self.call('/api/admin/licenses/{license_id}/manage',license_id=row['id'],body=m.LicenseActionInput(action='configure',device_limit=0),admin=self.admin)
++        legacy=self.call('/api/auth/license',body=m.LicenseCodeInput(license_code=row['code']),request=self.request)
++        legacy_account=core.current_account(HTTPAuthorizationCredentials(scheme='Bearer',credentials=legacy['access_token']),self.pool)
++        self.assertTrue(legacy_account['licensed'])
++        self.assertTrue(legacy_account['support_enabled'])
++        self.assertIsNone(legacy_account['device_id'])
++        old_ticket=core.create_ticket(core.TicketInput(category='Sistem',title='Eski istemci',description='Destek',device_id='123456'),legacy_account,self.pool)
++        self.assertEqual(old_ticket['device_id'],'123456')
++        req=Request({'type':'http','headers':[(b'authorization',('Bearer '+legacy['access_token']).encode())],'client':('127.0.0.1',1234)})
++        lease=m.LeaseInput(device_id='123456',session_id=str(uuid4()),peer_id='777777')
++        self.call('/api/connections/start',body=lease,request=req)
++        with self.pool.connection() as conn:
++            conn.execute('UPDATE connection_leases SET license_id=NULL WHERE session_id=%s',(lease.session_id,))
++            conn.commit()
++        self.assertTrue(self.call('/api/connections/start',body=lease,request=req)['premium'])
++        self.call('/api/admin/licenses/{license_id}/manage',license_id=row['id'],body=m.LicenseActionInput(action='configure',device_limit=1),admin=self.admin)
++        with self.assertRaises(HTTPException) as old_limited:
++            core.current_account(HTTPAuthorizationCredentials(scheme='Bearer',credentials=legacy['access_token']),self.pool)
++        self.assertEqual(old_limited.exception.status_code,401)
++        with self.assertRaises(HTTPException) as no_device:
++            self.call('/api/auth/license',body=m.LicenseCodeInput(license_code=row['code']),request=self.request)
++        self.assertEqual(no_device.exception.status_code,422)
++
++    def test_trial_expiry_and_file_children_share_the_parent_policy(self):
++        with self.assertRaises(HTTPException) as no_expiry:
++            self.call('/api/admin/firm-licenses',body=m.FirmLicenseInput(display_name='Deneme',license_kind='trial'),admin=self.admin)
++        self.assertEqual(no_expiry.exception.status_code,422)
++        trial=self.call('/api/admin/firm-licenses',body=m.FirmLicenseInput(display_name='Deneme',license_kind='trial',duration_days=7),admin=self.admin)
++        logged=self.call('/api/auth/license',body=m.LicenseCodeInput(license_code=trial['code'],device_id='123456'),request=self.request)
++        self.assertEqual(logged['account']['license_kind'],'trial')
++        with self.pool.connection() as conn:
++            conn.execute("UPDATE licenses SET expires_at=now()-interval '1 second' WHERE id=%s",(trial['id'],))
++            conn.commit()
++        with self.assertRaises(HTTPException) as expired:
++            core.current_account(HTTPAuthorizationCredentials(scheme='Bearer',credentials=logged['access_token']),self.pool)
++        self.assertEqual(expired.exception.status_code,401)
++        parent=m.LeaseInput(device_id='123456',session_id=str(uuid4()),peer_id='654321')
++        root=self.call('/api/connections/start',body=parent,request=self.request)
++        child=m.LeaseInput(device_id='123456',session_id=str(uuid4()),peer_id='654321',parent_session_id=parent.session_id)
++        file=self.call('/api/connections/start',body=child,request=self.request)
++        permit=json.loads(base64.b64decode(file['permit'].split('.')[0]))
++        self.assertEqual((permit['session_id'],permit['policy_session_id']),(child.session_id,parent.session_id))
++        self.assertEqual(file['expires_at'],root['expires_at'])
++        self.assertFalse(file['premium'])
++        for wrong in [m.LeaseInput(device_id='123456',session_id=str(uuid4()),peer_id='111111',parent_session_id=parent.session_id),
++                      m.LeaseInput(device_id='654321',session_id=str(uuid4()),peer_id='654321',parent_session_id=parent.session_id)]:
++            with self.assertRaises(HTTPException) as mismatched:
++                self.call('/api/connections/start',body=wrong,request=self.request)
++            self.assertEqual(mismatched.exception.status_code,409)
++        self.call('/api/connections/{session_id}/end',session_id=child.session_id,request=self.request)
++        self.assertFalse(self.call('/api/connections/start',body=parent,request=self.request)['premium'])
++        self.call('/api/connections/{session_id}/end',session_id=parent.session_id,request=self.request)
++        with self.assertRaises(HTTPException) as ended:
++            self.call('/api/connections/start',body=child,request=self.request)
++        self.assertEqual(ended.exception.status_code,409)
+--- before/flutter\lib\common\widgets\peer_tab_page.dart
++++ after/flutter\lib\common\widgets\peer_tab_page.dart
+@@ -136,19 +136,21 @@
+   Widget build(BuildContext context) {
+     final model = Provider.of<PeerTabModel>(context);
+     if (isWindows && bind.mainGetAppNameSync() == 'ForlanDestek') {
+-      return ValueListenableBuilder<bool>(valueListenable: forlanSupportSelected, builder: (_, support, __) => Column(children: [
++      return AnimatedBuilder(animation: ForlanSupportSession.instance, builder: (_, __) => ValueListenableBuilder<bool>(valueListenable: forlanSupportSelected, builder: (_, selected, __) {
++        final support = selected && ForlanSupportSession.instance.supportEnabled;
++        return Column(children: [
+         Row(children: [
+           for (final tab in [PeerTabIndex.ab.index, PeerTabIndex.recent.index])
+             Expanded(child: TextButton.icon(
+               style: TextButton.styleFrom(backgroundColor: !support && model.currentTab == tab ? MyTheme.accent.withOpacity(.12) : null),
+               onPressed: () { forlanSupportSelected.value = false; handleTabSelection(tab); },
+               icon: Icon(model.tabIcon(tab), size: 18), label: Text(model.tabTooltip(tab), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)))),
+-          Expanded(child: TextButton(style: TextButton.styleFrom(backgroundColor: support ? MyTheme.accent.withOpacity(.12) : null), onPressed: () => forlanSupportSelected.value = true, child: const ForlanSupportTabLabel())),
++          if (ForlanSupportSession.instance.supportEnabled) Expanded(child: TextButton(style: TextButton.styleFrom(backgroundColor: support ? MyTheme.accent.withOpacity(.12) : null), onPressed: () => forlanSupportSelected.value = true, child: const ForlanSupportTabLabel())),
+         ]),
+         const ForlanUsageNotice(),
+         if (!support) SizedBox(height: model.multiSelectionMode ? 44 : 28, child: model.multiSelectionMode ? createMultiSelectionBar(model) : Row(mainAxisAlignment: MainAxisAlignment.end, children: _landscapeRightActions(context))),
+         if (support) const Expanded(child: ForlanSupportWorkspace()) else _createPeersView(),
+-      ]));
++      ]); }));
+     }
+     Widget selectionWrap(Widget widget) {
+       return model.multiSelectionMode ? createMultiSelectionBar(model) : widget;
+--- before/flutter\lib\desktop\pages\desktop_home_page.dart
++++ after/flutter\lib\desktop\pages\desktop_home_page.dart
+@@ -154,7 +154,7 @@
+       if (!isOutgoingOnly && !isForlan) buildServerStatus(context),
+       if (!isOutgoingOnly) buildIDBoard(context),
+       if (!isOutgoingOnly) buildPasswordBoard(context),
+-      if (!isIncomingOnly && isForlan) _buildForlanSupportEntry(context),
++      if (!isIncomingOnly && isForlan) AnimatedBuilder(animation: ForlanSupportSession.instance, builder: (_, __) => ForlanSupportSession.instance.supportEnabled ? _buildForlanSupportEntry(context) : const SizedBox.shrink()),
+       FutureBuilder<Widget>(
+         future: Future.value(
+             Obx(() => buildHelpCards(stateGlobal.updateUrl.value))),
+@@ -284,7 +284,7 @@
+             borderRadius: BorderRadius.circular(12),
+             border: Border.all(color: _homeBorder(context)),
+           ),
+-          child: Row(
++          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [Row(
+             children: [
+               ForlanServiceIndicator(color: color, pulsing: ready),
+               const SizedBox(width: 10),
+@@ -349,7 +349,7 @@
+                 ),
+               ),
+             ],
+-          ),
++          ), const SizedBox(height: 3), const ForlanLicenseAction()]),
+         );
+       });
+     });
+@@ -382,7 +382,7 @@
+                             fontSize: 13,
+                             fontWeight: FontWeight.w700)),
+                     const SizedBox(height: 2),
+-                    Text('Lisans ve teknisyen mesajları',
++                    Text('Destek kayıtları ve mesajlar',
+                         maxLines: 1,
+                         overflow: TextOverflow.ellipsis,
+                         style: TextStyle(
+--- before/flutter\lib\desktop\pages\desktop_setting_page.dart
++++ after/flutter\lib\desktop\pages\desktop_setting_page.dart
+@@ -534,10 +534,10 @@
+         if (!isWeb) hwcodec(),
+         if (!isWeb) audio(context),
+           if (isWindows && bind.mainGetAppNameSync() == 'ForlanDestek')
+-            AnimatedBuilder(animation: ForlanSupportSession.instance, builder: (_, __) => _Card(title: 'Lisans ve destek bildirimleri', children: [
+-              TextButton.icon(onPressed: () { forlanSupportSelected.value = true; Get.find<DesktopTabController>().jumpToByKey(kTabLabelHomePage); }, icon: const Icon(Icons.key), label: const Text('Lisans / Destek merkezini aç')),
+-              if (ForlanSupportSession.instance.privileged) const ForlanSupportSoundSettings()
+-              else const Padding(padding: EdgeInsets.all(12), child: Text('Destek bildirim ayarları için lisansınızı etkinleştirin. Temel bağlantı, görüntü ve ses ayarları kullanılabilir.')),
++            AnimatedBuilder(animation: ForlanSupportSession.instance, builder: (_, __) => _Card(title: 'Lisans ve bildirimler', children: [
++              TextButton.icon(onPressed: () => showForlanLicenseDialog(context), icon: const Icon(Icons.key), label: Text(ForlanSupportSession.instance.token == null ? 'Giriş yap / Lisansı etkinleştir' : 'Lisans ve hesap bilgileri')),
++              if (ForlanSupportSession.instance.supportEnabled) const ForlanSupportSoundSettings()
++              else Padding(padding: const EdgeInsets.all(12), child: Text(ForlanSupportSession.instance.privileged ? 'Kullanım lisansınız etkin. Bu lisansa destek hizmeti dahil değildir.' : 'Lisansınızı etkinleştirerek kullanım haklarınızı açabilirsiniz. Destek hizmeti lisansınızda ayrıca tanımlanır. Temel bağlantı, görüntü ve ses ayarları kullanılabilir.')),
+             ])),
+         if (!isWeb) record(context),
+         if (!isWeb) WaylandCard(),
+@@ -557,7 +557,7 @@
+         final role = switch (session.account?['role']) {
+           'admin' => 'Yönetici',
+           'technician' => 'Teknisyen',
+-          _ => 'Müşteri',
++          _ => session.supportEnabled ? 'Müşteri' : 'Lisanslı kullanıcı',
+         };
+         return _Card(title: 'Hesap oturumu', children: [
+           Padding(
+@@ -2338,8 +2338,9 @@
+     if (isWindows && bind.mainGetAppNameSync() == 'ForlanDestek') {
+       return AnimatedBuilder(animation: ForlanSupportSession.instance, builder: (_, __) => ListView(children: [
+         _Card(title: 'Lisans ve hesap', children: [
+-          Padding(padding: const EdgeInsets.all(16), child: Text(ForlanSupportSession.instance.account?['display_name']?.toString() ?? 'Lisansınız henüz etkinleştirilmedi.', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700))),
+-          _Button(ForlanSupportSession.instance.token == null ? 'Lisans koduyla oturum aç' : 'Destek merkezini aç', () { forlanSupportSelected.value = true; Get.find<DesktopTabController>().jumpToByKey(kTabLabelHomePage); }),
++          const Padding(padding: EdgeInsets.all(16), child: ForlanLicenseDetails()),
++          _Button(ForlanSupportSession.instance.token == null ? 'Giriş yap / Lisansı etkinleştir' : 'Lisans ve hesap bilgileri', () => showForlanLicenseDialog(context)),
++          if (ForlanSupportSession.instance.supportEnabled) _Button('Destek taleplerini aç', () { forlanSupportSelected.value = true; Get.find<DesktopTabController>().jumpToByKey(kTabLabelHomePage); }),
+         ]),
+       ]));
+     }
+--- before/flutter\lib\desktop\pages\forlan_support_session.dart
++++ after/flutter\lib\desktop\pages\forlan_support_session.dart
+@@ -1,7 +1,6 @@
+ part of 'forlan_support_dialog.dart';
+ 
+ const _messageSoundOption = 'forlan-support-message-sound';
+-const _connectionSoundOption = 'forlan-support-connection-sound';
+ 
+ class _SupportApiException implements Exception {
+   const _SupportApiException(this.statusCode, this.message);
+@@ -22,6 +21,7 @@
+   int eventRevision = 0;
+   DateTime? freeConnectionExpires, waitingUntil;
+   String? freeSessionId;
++  int transferUsed = 0, transferLimit = 0;
+   void updateConnectionState(Map<String, dynamic> event) {
+     final waiting = int.tryParse(event['waiting_until']?.toString() ?? '');
+     final expires = int.tryParse(event['expires']?.toString() ?? '');
+@@ -30,17 +30,22 @@
+       freeSessionId = event['session_id']?.toString();
+       freeConnectionExpires = DateTime.fromMillisecondsSinceEpoch(expires * 1000);
+       waitingUntil = null;
++      transferUsed = int.tryParse(event['transfer_used']?.toString() ?? '') ?? transferUsed;
++      transferLimit = int.tryParse(event['transfer_limit']?.toString() ?? '') ?? transferLimit;
+     } else if (event['active']?.toString() == 'false' && event['session_id']?.toString() == freeSessionId) {
+       if (freeConnectionExpires != null && !DateTime.now().isBefore(freeConnectionExpires!)) waitingUntil = freeConnectionExpires!.add(const Duration(minutes: 1));
+       freeConnectionExpires = null; freeSessionId = null;
++      transferUsed = 0; transferLimit = 0;
+     }
+     notifyListeners();
+   }
+   int get unreadCount => tickets.fold(0, (total, ticket) => total + ((ticket['unread_count'] as num?)?.toInt() ?? 0));
+-  bool get privileged => account?['licensed'] == true || account?['role'] == 'admin' || account?['role'] == 'technician';
++  bool get staff => account?['role'] == 'admin' || account?['role'] == 'technician';
++  bool get privileged => account?['licensed'] == true || staff;
++  bool get supportEnabled => staff || (account?['licensed'] == true && account?['support_enabled'] == true);
+   Future<void> refreshTickets() async {
+     final accessToken = token;
+-    if (accessToken == null) return;
++    if (accessToken == null || !supportEnabled) return;
+     final result = await api.get('/api/tickets', accessToken);
+     if (token != accessToken) return;
+     tickets = (result as List).map((v) => Map<String, dynamic>.from(v as Map)).toList();
+@@ -52,11 +57,13 @@
+ 
+   Future<void> acceptLogin(
+       String accessToken, Map<String, dynamic> user) async {
+-    final snapshot = await api.get('/api/events', accessToken);
++    final support = user['role'] == 'admin' || user['role'] == 'technician' || (user['licensed'] == true && user['support_enabled'] == true);
++    final snapshot = support ? await api.get('/api/events', accessToken) : null;
+     _timer?.cancel();
+-    _cursor = snapshot['cursor'] as int;
++    _cursor = snapshot?['cursor'] as int? ?? 0;
+     token = accessToken;
+     account = user;
++    tickets = [];
+     try {
+       await bind.mainSetLocalOption(key: 'forlan-support-session', value: accessToken);
+       await refreshTickets();
+@@ -77,6 +84,7 @@
+     tickets = [];
+     bind.mainSetLocalOption(key: 'forlan-support-session', value: '');
+     changedTickets = {};
++    forlanSupportSelected.value = false;
+     notifyListeners();
+   }
+ 
+@@ -85,6 +93,23 @@
+     if (_polling || accessToken == null) return;
+     _polling = true;
+     try {
++      final profile = await api.get('/api/me', accessToken);
++      if (token != accessToken) return;
++      final previouslySupported = supportEnabled;
++      account = Map<String, dynamic>.from(profile as Map);
++      if (!supportEnabled) {
++        tickets = [];
++        changedTickets = {};
++        _cursor = 0;
++        forlanSupportSelected.value = false;
++        notifyListeners();
++        return;
++      }
++      if (!previouslySupported) {
++        final snapshot = await api.get('/api/events', accessToken);
++        if (token != accessToken) return;
++        _cursor = snapshot['cursor'] as int;
++      }
+       final response = await api.get('/api/events?after=$_cursor', accessToken);
+       if (token != accessToken) return;
+       final events = List<dynamic>.from(response['events'] as List);
+@@ -97,9 +122,6 @@
+       }
+       if (token != accessToken) return;
+       _cursor = response['cursor'] as int;
+-      final profile = await api.get('/api/me', accessToken);
+-      if (token != accessToken) return;
+-      account = Map<String, dynamic>.from(profile as Map);
+       await refreshTickets();
+       if (changed.isNotEmpty) {
+         changedTickets = changed;
+@@ -126,20 +148,20 @@
+     if (kind == 'connection_request') {
+       title = 'Teknisyen bağlantı isteği';
+       body = '$sender, "$ticketTitle" kaydı için bilgisayarınıza bağlanıyor.';
+-      if (bind.mainGetLocalOption(key: _connectionSoundOption) != 'N') {
+-        sound = 'connection';
+-      }
+     } else if (kind == 'ticket_created' ||
+         kind == 'message' ||
+-        kind == 'technician_notification') {
++        kind == 'technician_notification' ||
++        kind == 'ticket_status') {
+       title = kind == 'ticket_created'
+           ? 'Yeni destek talebi'
+           : kind == 'technician_notification'
+               ? 'Teknisyen bildirimi'
+-              : 'Destek kaydı #${event['ticket_id']} · Yeni mesaj';
++              : kind == 'ticket_status'
++                  ? 'Destek kaydı #${event['ticket_id']} · Durum güncellendi'
++                  : 'Destek kaydı #${event['ticket_id']} · Yeni mesaj';
+       body = kind == 'technician_notification'
+           ? '$sender: $ticketTitle · ${event['message'] ?? ''}'
+-          : '$sender: ${kind == 'message' ? event['message'] ?? '' : ticketTitle}';
++          : '$sender: ${kind == 'message' || kind == 'ticket_status' ? event['message'] ?? ticketTitle : ticketTitle}';
+       if (bind.mainGetLocalOption(key: _messageSoundOption) != 'N') {
+         sound = 'message';
+       }
+@@ -180,18 +202,10 @@
+         contentPadding: EdgeInsets.zero,
+         title: const Text('Destek talebi ve mesaj sesi'),
+         subtitle:
+-            const Text('Oturumunuz açıkken yeni talepler ve gelen mesajlar.'),
++            const Text('Yeni kayıtlar, mesajlar ve destek bildirimleri. Bağlantı istekleri sessizdir.'),
+         value: bind.mainGetLocalOption(key: _messageSoundOption) != 'N',
+         onChanged: (enabled) => _set(_messageSoundOption, enabled),
+       ),
+-      SwitchListTile(
+-        contentPadding: EdgeInsets.zero,
+-        title: const Text('Teknisyen bağlantı isteği sesi'),
+-        subtitle:
+-            const Text('Yalnızca lisanslı hesabınızın açık destek kaydı için.'),
+-        value: bind.mainGetLocalOption(key: _connectionSoundOption) != 'N',
+-        onChanged: (enabled) => _set(_connectionSoundOption, enabled),
+-      ),
+     ]);
+   }
+ }
+--- before/flutter\lib\desktop\pages\forlan_support_workspace.dart
++++ after/flutter\lib\desktop\pages\forlan_support_workspace.dart
+@@ -1,6 +1,139 @@
+ part of 'forlan_support_dialog.dart';
+ 
+ final forlanSupportSelected = ValueNotifier<bool>(false);
++
++Future<void> showForlanLicenseDialog(BuildContext context) async {
++  final accepted = await showDialog<bool>(
++    context: context,
++    builder: (_) => const _ForlanLicenseDialog(),
++  );
++  if (accepted == true && context.mounted) {
++    await showDialog<void>(context: context, builder: (_) => const _ForlanLicenseSuccess());
++  }
++}
++
++class ForlanLicenseAction extends StatelessWidget {
++  const ForlanLicenseAction({super.key});
++  @override
++  Widget build(BuildContext context) => AnimatedBuilder(
++    animation: ForlanSupportSession.instance,
++    builder: (_, __) {
++      final session = ForlanSupportSession.instance;
++      final expires = DateTime.tryParse(session.account?['license_expires_at']?.toString() ?? '');
++      final days = expires?.difference(DateTime.now()).inDays;
++      final expiring = session.privileged && !session.staff && days != null && days <= 14;
++      final label = session.token == null ? 'Giriş yap / Lisansı etkinleştir' : session.staff ? 'Yetkili hesap' : '${session.account?['license_kind'] == 'trial' ? 'Deneme lisansı' : 'Lisans etkin'}${expiring ? ' · ${days < 0 ? 0 : days} gün kaldı' : ''}';
++      return TextButton.icon(
++        onPressed: () => showForlanLicenseDialog(context),
++        style: TextButton.styleFrom(
++          minimumSize: const Size(0, 24),
++          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
++          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
++          foregroundColor: expiring ? const Color(0xFFF0C674) : session.privileged ? const Color(0xFF6BDBC1) : const Color(0xFFC1A6FF),
++          alignment: Alignment.centerLeft,
++        ),
++        icon: Icon(session.privileged ? Icons.verified_outlined : Icons.key_rounded, size: 13),
++        label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
++      );
++    },
++  );
++}
++
++class ForlanLicenseDetails extends StatelessWidget {
++  const ForlanLicenseDetails({super.key});
++  @override
++  Widget build(BuildContext context) {
++    final session = ForlanSupportSession.instance;
++    final expires = DateTime.tryParse(session.account?['license_expires_at']?.toString() ?? '')?.toLocal();
++    final limit = (session.account?['device_limit'] as num?)?.toInt() ?? 0;
++    final role = session.staff ? (session.account?['role'] == 'admin' ? 'Yönetici' : 'Teknisyen') : session.supportEnabled ? 'Destek dahil lisans' : 'Kullanım lisansı';
++    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
++      Text(session.account?['display_name']?.toString() ?? 'Lisansınız henüz etkinleştirilmedi.', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
++      if (session.token != null) ...[
++        const SizedBox(height: 8),
++        Text('${session.account?['license_kind'] == 'trial' ? 'Deneme · ' : ''}$role', style: const TextStyle(color: Color(0xFFC1A6FF), fontWeight: FontWeight.w600)),
++        const SizedBox(height: 8),
++        Text(session.privileged ? 'Süre ve dosya kotası olmadan, birden fazla bağlantı.' : 'Lisansınız etkin değil. Ücretsiz kullanım sınırları geçerli.', style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
++        if (session.privileged && session.freeConnectionExpires?.isAfter(DateTime.now()) == true)
++          Padding(padding: const EdgeInsets.only(top: 8), child: Text('Bu açık bağlantı başlatıldığı andaki ücretsiz sınırlarla devam eder. Lisanslı kullanım için bağlantıyı kapatıp yeniden bağlanın.', style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor))),
++        if (!session.staff) ...[
++          const SizedBox(height: 8),
++          if (expires != null) Text('Bitiş: ${expires.day.toString().padLeft(2, '0')}.${expires.month.toString().padLeft(2, '0')}.${expires.year}', style: const TextStyle(fontSize: 12)),
++          const SizedBox(height: 4),
++          Text('Cihaz hakkı: ${limit == 0 ? 'Sınırsız' : limit}', style: const TextStyle(fontSize: 12)),
++          if (!session.supportEnabled) Padding(padding: const EdgeInsets.only(top: 8), child: Text('Bu lisans uzaktan bağlantı kullanımını kapsar; Forlan destek hizmeti dahil değildir.', style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor))),
++        ],
++      ],
++    ]);
++  }
++}
++
++class _ForlanLicenseDialog extends StatefulWidget {
++  const _ForlanLicenseDialog();
++  @override
++  State<_ForlanLicenseDialog> createState() => _ForlanLicenseDialogState();
++}
++
++class _ForlanLicenseDialogState extends State<_ForlanLicenseDialog> {
++  final _session = ForlanSupportSession.instance;
++  final _code = TextEditingController(), _username = TextEditingController(), _password = TextEditingController();
++  bool _staffLogin = false, _busy = false, _changeAccount = false;
++  String? _error;
++  @override
++  void dispose() { _code.dispose(); _username.dispose(); _password.dispose(); super.dispose(); }
++  Future<void> _login() async {
++    setState(() { _busy = true; _error = null; });
++    try {
++      final id = (await bind.mainGetMyId()).replaceAll(RegExp(r'\D'), '');
++      if (!_staffLogin && !RegExp(r'^[0-9]{3,12}$').hasMatch(id)) throw Exception('Bağlantı kimliği hazırlanıyor. Servis hazır olduğunda tekrar deneyin.');
++      final version = await bind.mainGetVersion();
++      final result = await _session.api.post(_staffLogin ? '/api/auth/login' : '/api/auth/license', {
++        if (_staffLogin) ...{'username': _username.text.trim(), 'password': _password.text}
++        else 'license_code': _code.text.trim(),
++        if (RegExp(r'^[0-9]{3,12}$').hasMatch(id)) 'device_id': id,
++        'device_name': Platform.localHostname.length > 160 ? Platform.localHostname.substring(0, 160) : Platform.localHostname,
++        'app_version': version.length > 40 ? version.substring(0, 40) : version,
++      });
++      if (_staffLogin && result['account']['role'] == 'customer') throw Exception('Müşteri girişi için lisans kodunuzu kullanın.');
++      await _session.acceptLogin(result['access_token'] as String, Map<String, dynamic>.from(result['account'] as Map));
++      if (mounted) Navigator.pop(context, true);
++    } catch (e) { if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', '')); }
++    finally { if (mounted) setState(() => _busy = false); }
++  }
++  @override
++  Widget build(BuildContext context) => Dialog(
++    insetPadding: const EdgeInsets.all(24),
++    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
++    child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 440), child: SingleChildScrollView(padding: const EdgeInsets.all(24), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
++      Row(children: [const Icon(Icons.verified_user_outlined, color: Color(0xFFC1A6FF), size: 24), const SizedBox(width: 9), Expanded(child: Text(_session.token != null && !_changeAccount ? 'Lisans ve hesap' : 'Giriş yap / Lisansı etkinleştir', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700))), IconButton(onPressed: _busy ? null : () => Navigator.pop(context), tooltip: 'Kapat', icon: const Icon(Icons.close, size: 20))]),
++      const SizedBox(height: 14),
++      if (_session.token != null && !_changeAccount) ...[
++        const ForlanLicenseDetails(),
++        const SizedBox(height: 18),
++        OutlinedButton.icon(onPressed: () => setState(() => _changeAccount = true), icon: const Icon(Icons.key, size: 18), label: const Text('Farklı hesap / lisans kullan')),
++      ] else ...[
++        Row(children: [
++          Expanded(child: _mode('Lisans kodu', !_staffLogin, () => setState(() { _staffLogin = false; _error = null; }))),
++          const SizedBox(width: 8),
++          Expanded(child: _mode('Yetkili girişi', _staffLogin, () => setState(() { _staffLogin = true; _error = null; }))),
++        ]),
++        const SizedBox(height: 14),
++        Text(_staffLogin ? 'Teknisyen veya yönetici hesabınızla giriş yapın.' : 'Kullanım hakkınız lisansınıza göre etkinleşir. Destek dahilse talepler ve mesajlar da açılır.', style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
++        const SizedBox(height: 16),
++        if (_error != null) ...[_InfoBanner(text: _error!, isError: true), const SizedBox(height: 12)],
++        if (_staffLogin) ...[
++          TextField(controller: _username, enabled: !_busy, autofocus: true, decoration: const InputDecoration(labelText: 'Kullanıcı adı', prefixIcon: Icon(Icons.person_outline))), const SizedBox(height: 12),
++          TextField(controller: _password, enabled: !_busy, obscureText: true, decoration: const InputDecoration(labelText: 'Parola', prefixIcon: Icon(Icons.lock_outline)), onSubmitted: (_) => _busy ? null : _login()),
++        ] else TextField(controller: _code, enabled: !_busy, autofocus: true, decoration: const InputDecoration(labelText: 'Lisans kodu', hintText: 'FLN-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX', prefixIcon: Icon(Icons.key)), onSubmitted: (_) => _busy ? null : _login()),
++        const SizedBox(height: 16),
++        FilledButton.icon(onPressed: _busy ? null : _login, style: FilledButton.styleFrom(foregroundColor: Colors.white, minimumSize: const Size(0, 44)), icon: _busy ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.login, size: 18), label: Text(_busy ? 'Doğrulanıyor…' : _staffLogin ? 'Giriş yap' : 'Lisansı etkinleştir')),
++      ],
++      const SizedBox(height: 6),
++      TextButton.icon(onPressed: () => launchUrl(Uri.parse(_purchaseAddress), mode: LaunchMode.externalApplication), icon: const Icon(Icons.open_in_new, size: 15), label: const Text('Lisans al / süre uzat', style: TextStyle(fontSize: 12))),
++    ]))),
++  );
++  Widget _mode(String label, bool selected, VoidCallback onTap) => TextButton(onPressed: _busy ? null : onTap, style: TextButton.styleFrom(backgroundColor: selected ? const Color(0xFFAD90F2).withOpacity(.16) : null, foregroundColor: selected ? const Color(0xFFC1A6FF) : Theme.of(context).hintColor), child: Text(label, style: TextStyle(fontSize: 12, fontWeight: selected ? FontWeight.w700 : FontWeight.w500)));
++}
+ 
+ class ForlanSupportTabLabel extends StatelessWidget {
+   const ForlanSupportTabLabel({super.key});
+@@ -37,8 +170,7 @@
+ 
+ class _ForlanSupportWorkspaceState extends State<ForlanSupportWorkspace> {
+   final _session = ForlanSupportSession.instance;
+-  final _code = TextEditingController(), _username = TextEditingController(), _password = TextEditingController();
+-  bool _staffLogin = false, _busy = false;
++  bool _busy = false;
+   String? _error;
+   int? _selected;
+   final _search = TextEditingController();
+@@ -50,22 +182,10 @@
+   void initState() { super.initState(); _session.addListener(_changed); _refresh(); }
+   void _changed() { if (mounted) setState(() {}); }
+   @override
+-  void dispose() { _session.removeListener(_changed); _code.dispose(); _username.dispose(); _password.dispose(); _search.dispose(); super.dispose(); }
++  void dispose() { _session.removeListener(_changed); _search.dispose(); super.dispose(); }
+   Future<void> _refresh() async {
+-    if (_session.token == null || _busy) return;
++    if (!_session.supportEnabled || _busy) return;
+     try { await _session.refreshTickets(); } catch (e) { if (mounted) setState(() => _error = e.toString()); }
+-  }
+-  Future<void> _login() async {
+-    setState(() { _busy = true; _error = null; });
+-    try {
+-      final result = await _session.api.post(_staffLogin ? '/api/auth/login' : '/api/auth/license',
+-        _staffLogin ? {'username': _username.text.trim(), 'password': _password.text} : {'license_code': _code.text.trim()});
+-      if (_staffLogin && result['account']['role'] == 'customer') throw Exception('Müşteri girişi için lisans kodunuzu kullanın.');
+-      await _session.acceptLogin(result['access_token'] as String, Map<String, dynamic>.from(result['account'] as Map));
+-      _code.clear(); _password.clear();
+-      if (mounted) await showDialog<void>(context: context, builder: (_) => const _ForlanLicenseSuccess());
+-    } catch (e) { if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', '')); }
+-    finally { if (mounted) setState(() => _busy = false); }
+   }
+   Future<void> _newTicket() async {
+     final data = await showDialog<Map<String, String>>(context: context, builder: (_) => const _NewSupportTicketDialog());
+@@ -89,7 +209,7 @@
+   }
+   @override
+   Widget build(BuildContext context) {
+-    if (_session.account == null) return _welcome();
++    if (!_session.supportEnabled) return const SizedBox.shrink();
+     if (_selected != null && (_staff || _session.tickets.any((t) => t['id'] == _selected && !_closed(t)))) {
+       return _ForlanTicketDetail(key: ValueKey(_selected), ticketId: _selected!, onBack: () { setState(() => _selected = null); _refresh(); });
+     }
+@@ -106,7 +226,7 @@
+           Text(_staff ? 'Destek havuzu' : 'Destek taleplerim', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+           Text(_staff ? '$activeCount aktif kayıt' : activeCount == 0 ? 'Bir sorununuz olduğunda buradayız.' : '$activeCount aktif talep · Mesajlarınız burada', style: TextStyle(fontSize: 11, color: Theme.of(context).hintColor), maxLines: 1, overflow: TextOverflow.ellipsis),
+         ])),
+-        if (!_staff) FilledButton.icon(onPressed: _busy || !_session.privileged ? null : _newTicket, icon: const Icon(Icons.add, size: 17), label: const Text('Kayıt aç')),
++        if (!_staff) FilledButton.icon(onPressed: _busy || !_session.supportEnabled ? null : _newTicket, icon: const Icon(Icons.add, size: 17), label: const Text('Kayıt aç')),
+         if (_staff) IconButton(tooltip: 'Kayıt ara', onPressed: () => setState(() { _searchVisible = !_searchVisible; if (!_searchVisible) _search.clear(); }), icon: Icon(_searchVisible ? Icons.search_off : Icons.search, size: 20)),
+         IconButton(tooltip: 'Yenile', onPressed: _refresh, icon: const Icon(Icons.refresh, size: 20)),
+       ])),
+@@ -170,19 +290,7 @@
+         const SizedBox(height: 5), Text('${states[ticket['status']] ?? ticket['status']} · ${ticket['assigned_name'] ?? 'Havuzda'}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Theme.of(context).hintColor, fontSize: 11)),
+       ]))));
+   }
+-  Widget _welcome() => Center(child: SingleChildScrollView(padding: const EdgeInsets.all(12), child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 420), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+-    Row(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.verified_user_outlined, color: Color(0xFFAD90F2), size: 26), const SizedBox(width: 8),
+-      Text(_staffLogin ? 'Yetkili girişi' : 'Lisansınızı etkinleştirin', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700))]),
+-    const SizedBox(height: 8), const Text('Destek kayıtları, mesajlar ve lisanslı bağlantı özellikleri.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12)), const SizedBox(height: 12),
+-    if (_error != null) _InfoBanner(text: _error!, isError: true),
+-    if (_staffLogin) ...[
+-      TextField(controller: _username, decoration: const InputDecoration(labelText: 'Kullanıcı adı')), const SizedBox(height: 10),
+-      TextField(controller: _password, obscureText: true, decoration: const InputDecoration(labelText: 'Parola'), onSubmitted: (_) => _busy ? null : _login()),
+-    ] else TextField(controller: _code, decoration: const InputDecoration(labelText: 'Lisans kodu', hintText: 'FLN-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX', prefixIcon: Icon(Icons.key)), onSubmitted: (_) => _busy ? null : _login()),
+-    const SizedBox(height: 10), FilledButton(style: FilledButton.styleFrom(foregroundColor: Colors.white), onPressed: _busy ? null : _login, child: Text(_busy ? 'Doğrulanıyor…' : 'Oturum aç')),
+-    Row(children: [Expanded(child: TextButton(onPressed: _busy ? null : () => setState(() { _staffLogin = !_staffLogin; _error = null; }), child: Text(_staffLogin ? 'Lisans koduyla giriş' : 'Teknisyen / yönetici', style: const TextStyle(fontSize: 11)))),
+-      Expanded(child: TextButton(onPressed: () => launchUrl(Uri.parse(_purchaseAddress), mode: LaunchMode.externalApplication), child: const Text('Lisans al / süre uzat', style: TextStyle(fontSize: 11))))]),
+-  ]))));
++
+ }
+ 
+ class _ForlanLicenseSuccess extends StatefulWidget {
+@@ -214,7 +322,7 @@
+         SizedBox(width: 94, height: 94, child: CustomPaint(painter: _ForlanSuccessSeal(_reducedMotion ? 1 : _animation.value))),
+         const SizedBox(height: 18), const Text('Başarıyla giriş yaptınız', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFFF5F3FF), fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -.35)),
+         const SizedBox(height: 8), Text('Hoş geldiniz, ${ForlanSupportSession.instance.account?['display_name'] ?? ''}', textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFC3B6E8), fontSize: 14)),
+-        const SizedBox(height: 20), TextButton(onPressed: () => Navigator.pop(context), child: const Text('Desteğe devam et', style: TextStyle(color: Color(0xFF6BDBC1), fontWeight: FontWeight.w600))),
++        const SizedBox(height: 20), TextButton(onPressed: () => Navigator.pop(context), child: const Text('Devam et', style: TextStyle(color: Color(0xFF6BDBC1), fontWeight: FontWeight.w600))),
+       ])))),
+     ]));
+   }))));
+@@ -300,7 +408,7 @@
+     _load();
+   }
+   Future<void> _load() async {
+-    if (_session.token == null || _busy) return;
++    if (!_session.supportEnabled || _busy) return;
+     setState(() { _busy = true; _error = null; });
+     try {
+       final data = await _session.api.get('/api/tickets/${widget.ticketId}', _session.token!);
+@@ -438,8 +546,20 @@
+   Widget build(BuildContext context) => AnimatedBuilder(animation: ForlanSupportSession.instance, builder: (_, __) {
+     final session = ForlanSupportSession.instance;
+     final deadline = session.freeConnectionExpires ?? session.waitingUntil;
+-    if (deadline == null || deadline.isBefore(DateTime.now())) return const SizedBox.shrink();
+-    final remaining = deadline.difference(DateTime.now()).inSeconds;
+-    return Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), child: Text('${session.freeConnectionExpires == null ? 'Yeni bağlantı için bekleme' : 'Lisanssız bağlantı kalan süre'}: ${remaining ~/ 60}:${(remaining % 60).toString().padLeft(2, '0')}', style: const TextStyle(color: Color(0xFFF0C674), fontWeight: FontWeight.w600, fontSize: 12)));
++    final active = deadline != null && deadline.isAfter(DateTime.now());
++    if (session.privileged && !active) return const SizedBox.shrink();
++    final remaining = active ? deadline.difference(DateTime.now()).inSeconds : 0;
++    final limit = session.transferLimit > 0 ? session.transferLimit : 30 * 1024 * 1024;
++    final usage = (session.transferUsed / (1024 * 1024)).toStringAsFixed(session.transferUsed == 0 ? 0 : 1);
++    final text = active
++        ? session.freeConnectionExpires == null
++            ? 'Yeni bağlantı için bekleme: ${remaining ~/ 60}:${(remaining % 60).toString().padLeft(2, '0')}'
++            : 'Kalan süre ${remaining ~/ 60}:${(remaining % 60).toString().padLeft(2, '0')} · Dosya gönderimi: $usage / ${limit ~/ (1024 * 1024)} MB'
++        : 'Lisanssız kullanım: 5 dk bağlantı · 1 dk ara · Oturumda toplam 30 MB dosya gönderimi';
++    return Container(margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3), decoration: BoxDecoration(color: const Color(0xFFF0C674).withOpacity(.06), borderRadius: BorderRadius.circular(9)), child: Row(children: [
++      const Icon(Icons.info_outline, size: 15, color: Color(0xFFF0C674)), const SizedBox(width: 7),
++      Expanded(child: Text(text, style: const TextStyle(color: Color(0xFFF0C674), fontWeight: FontWeight.w500, fontSize: 11))),
++      TextButton(onPressed: () => showForlanLicenseDialog(context), style: TextButton.styleFrom(minimumSize: Size.zero, padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6), tapTargetSize: MaterialTapTargetSize.shrinkWrap), child: const Text('Lisans', style: TextStyle(fontSize: 11))),
++    ]));
+   });
+ }
+--- before/flutter\pubspec.yaml
++++ after/flutter\pubspec.yaml
+@@ -16,7 +16,7 @@
+ # Read more about iOS versioning at
+ # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+ # 1.1.9-1 works for android, but for ios it becomes 1.1.91, need to set it to 1.1.9-a.1 for iOS, will get 1.1.9.1, but iOS store not allow 4 numbers
+-version: 1.15.0+77
++version: 1.16.0+78
+ 
+ environment:
+   sdk: '^3.1.0'
+--- before/libs\portable\Cargo.toml
++++ after/libs\portable\Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "rustdesk-portable-packer"
+-version = "1.15.0"
++version = "1.16.0"
+ edition = "2021"
+ description = "Forlan Destek Remote Desktop"
+ 
+--- before/src\client\io_loop.rs
++++ after/src\client\io_loop.rs
+@@ -102,6 +102,10 @@
+     last_record_state: bool,
+     sent_close_reason: bool,
+     cursor_dedupe: CursorDedupe,
++    #[cfg(all(windows, feature = "flutter"))]
++    forlan_policy: Option<Arc<crate::forlan_policy::PolicyGroup>>,
++    #[cfg(all(windows, feature = "flutter"))]
++    forlan_clipboard: crate::forlan_transfer::ClipboardQuota,
+ }
+ 
+ #[derive(Default)]
+@@ -154,7 +158,46 @@
+             last_record_state: false,
+             sent_close_reason: false,
+             cursor_dedupe: Default::default(),
+-        }
++            #[cfg(all(windows, feature = "flutter"))]
++            forlan_policy: None,
++            #[cfg(all(windows, feature = "flutter"))]
++            forlan_clipboard: Default::default(),
++        }
++    }
++
++    #[cfg(all(windows, feature = "flutter"))]
++    pub fn set_forlan_policy(&mut self, policy: Option<Arc<crate::forlan_policy::PolicyGroup>>) { self.forlan_policy = policy; }
++
++    #[cfg(all(windows, feature = "flutter"))]
++    fn forlan_selection_error(&self, size: u64) -> Option<String> {
++        let policy = self.forlan_policy.as_ref()?;
++        match policy.quota.check_selection(size) {
++            Ok(()) => None,
++            Err(error) => { policy.transfer_error(&error.to_string()); Some(error.to_string()) }
++        }
++    }
++
++    #[cfg(all(windows, feature = "flutter"))]
++    fn forlan_clipboard_outgoing(&mut self, message: &mut Message) {
++        if let Some(policy) = self.forlan_policy.as_ref() {
++            match self.forlan_clipboard.outgoing(message, &policy.quota) {
++                Ok(true) => policy.publish(),
++                Ok(false) => {},
++                Err(error) => policy.transfer_error(&error.to_string()),
++            }
++        }
++    }
++
++    #[cfg(all(windows, feature = "flutter"))]
++    async fn forlan_read_jobs(&mut self, peer: &mut Stream) -> ResultType<()> {
++        let Some(policy) = self.forlan_policy.clone() else { return Ok(()); };
++        let (failures, publish) = crate::forlan_transfer::handle_read_jobs(&mut self.read_jobs, peer, &policy.quota).await?;
++        if publish { policy.publish(); }
++        for (id, file_num, error) in failures {
++            policy.transfer_error(&error);
++            self.handle_job_status(id, file_num, Some(error));
++        }
++        Ok(())
+     }
+ 
+     pub async fn io_loop(&mut self, key: &str, token: &str, round: u32) {
+@@ -319,7 +362,13 @@
+                                 break;
+                             }
+                             if !self.read_jobs.is_empty() {
+-                                if let Err(err) = fs::handle_read_jobs(&mut self.read_jobs, &mut peer).await {
++                                #[cfg(all(windows, feature = "flutter"))]
++                                let result = if self.forlan_policy.as_ref().map_or(false, |policy| !policy.quota.premium()) {
++                                    self.forlan_read_jobs(&mut peer).await
++                                } else { fs::handle_read_jobs(&mut self.read_jobs, &mut peer).await.map(|_| ()) };
++                                #[cfg(not(all(windows, feature = "flutter")))]
++                                let result = fs::handle_read_jobs(&mut self.read_jobs, &mut peer).await.map(|_| ());
++                                if let Err(err) = result {
+                                     self.handler.msgbox("error", "Connection Error", &err.to_string(), "");
+                                     break;
+                                 }
+@@ -506,6 +555,10 @@
+                             self.initial_clipboard_pending = false;
+                         }
+                         let msg = crate::clipboard_file::clip_2_msg(clip);
++                        #[cfg(all(windows, feature = "flutter"))]
++                        let mut msg = msg;
++                        #[cfg(all(windows, feature = "flutter"))]
++                        self.forlan_clipboard_outgoing(&mut msg);
+                         allow_err!(peer.send(&msg).await);
+                     }
+                 }
+@@ -758,6 +811,8 @@
+                 }
+             }
+             Data::Message(msg) => {
++                #[cfg(all(windows, feature = "flutter"))]
++                let mut msg = msg;
+                 // The Flutter clipboard broadcast is process-wide, so a clipboard can reach this
+                 // round's queue before the round has logged in; it is dropped here, on the round
+                 // itself.
+@@ -801,6 +856,8 @@
+                     },
+                     _ => {}
+                 }
++                #[cfg(all(windows, feature = "flutter"))]
++                self.forlan_clipboard_outgoing(&mut msg);
+                 allow_err!(peer.send(&msg).await);
+             }
+             Data::SendFiles((id, r#type, path, to, file_num, include_hidden, is_remote)) => {
+@@ -843,6 +900,11 @@
+                             self.handle_job_status(id, -1, Some(err.to_string()));
+                         }
+                         Ok(job) => {
++                            #[cfg(all(windows, feature = "flutter"))]
++                            if let Some(error) = self.forlan_selection_error(job.total_size()) {
++                                self.handle_job_status(id, -1, Some(error));
++                                return true;
++                            }
+                             log::debug!(
+                                 "New job {}, read {} to remote {}, {} files",
+                                 id,
+@@ -2571,6 +2633,8 @@
+             log::debug!("Discarding incoming file clipboard message before login");
+             return;
+         }
++        #[cfg(all(windows, feature = "flutter"))]
++        if self.forlan_policy.as_ref().map_or(false, |policy| !policy.quota.premium()) { self.forlan_clipboard.incoming(&clip); }
+         log::debug!("handling cliprdr msg from server peer");
+         #[cfg(feature = "flutter")]
+         if let Some(base::message_proto::cliprdr::Union::FormatList(_)) = &clip.union {
+--- before/src\forlan_policy.rs
++++ after/src\forlan_policy.rs
+@@ -7,7 +7,7 @@
+     ResultType,
+ };
+ use serde::{Deserialize, Serialize};
+-use std::{sync::Mutex, time::{Duration, SystemTime, UNIX_EPOCH}};
++use std::{collections::HashMap, sync::{atomic::{AtomicBool, AtomicU64, Ordering}, Arc, Mutex, Weak}, time::{Duration, SystemTime, UNIX_EPOCH}};
+ 
+ static SUPPORT_TOKEN: Mutex<String> = Mutex::new(String::new());
+ 
+@@ -24,6 +24,8 @@
+     device_id: String,
+     session_id: String,
+     peer_id: String,
++    #[serde(skip_serializing_if = "Option::is_none")]
++    parent_session_id: Option<String>,
+ }
+ 
+ #[derive(Deserialize)]
+@@ -34,6 +36,7 @@
+     exp: u64,
+     connection_expires: u64,
+     premium: bool,
++    policy_session_id: String,
+ }
+ 
+ #[derive(Deserialize)]
+@@ -52,6 +55,33 @@
+     request: LeaseRequest,
+     client: reqwest::Client,
+     cancel: Option<oneshot::Sender<()>>,
++    pub group: Arc<PolicyGroup>,
++    is_parent: bool,
++}
++
++pub struct PolicyGroup {
++    request: LeaseRequest,
++    token: String,
++    pub quota: crate::forlan_transfer::Quota,
++    active: AtomicBool,
++    expires: AtomicU64,
++    channels: Mutex<HashMap<String, mpsc::UnboundedSender<Data>>>,
++}
++
++lazy_static::lazy_static! {
++    static ref REMOTE_PARENTS: Mutex<HashMap<String, Weak<PolicyGroup>>> = Mutex::new(HashMap::new());
++}
++
++impl PolicyGroup {
++    pub fn publish(&self) {
++        crate::flutter::push_global_event(crate::flutter::APP_TYPE_MAIN, serde_json::json!({
++            "name":"forlan-policy-state", "session_id":self.request.session_id, "peer_id":self.request.peer_id,
++            "premium":self.quota.premium(), "expires":self.expires.load(Ordering::Acquire),
++            "active":self.active.load(Ordering::Acquire), "transfer_used":self.quota.used(), "transfer_limit":self.quota.limit()
++        }).to_string());
++    }
++
++    pub fn transfer_error(&self, message: &str) { self.publish(); policy_message(message); }
+ }
+ 
+ fn endpoint() -> &'static str {
+@@ -74,14 +104,13 @@
+         hbb_common::bail!("Sunucunun bağlantı imzası doğrulanamadı");
+     }
+     let permit: Permit = serde_json::from_slice(&payload)?;
+-    if permit.session_id != request.session_id || permit.device_id != request.device_id || permit.peer_id != request.peer_id || permit.exp <= now()? {
++    if permit.session_id != request.session_id || permit.device_id != request.device_id || permit.peer_id != request.peer_id || permit.policy_session_id != request.parent_session_id.as_ref().unwrap_or(&request.session_id).as_str() || permit.exp <= now()? {
+         hbb_common::bail!("Bağlantı izni bu oturuma ait değil veya süresi dolmuş");
+     }
+     Ok(permit)
+ }
+ 
+-async fn refresh(client: &reqwest::Client, request: &LeaseRequest) -> ResultType<Permit> {
+-    let token = SUPPORT_TOKEN.lock().unwrap().clone();
++async fn refresh(client: &reqwest::Client, request: &LeaseRequest, token: &str) -> ResultType<Permit> {
+     let mut call = client.post(format!("{}/api/connections/start", endpoint())).json(request);
+     if !token.is_empty() {
+         call = call.bearer_auth(token);
+@@ -104,21 +133,33 @@
+     crate::flutter::push_global_event(crate::flutter::APP_TYPE_MAIN, serde_json::json!({"name":"forlan-policy-message","message":message}).to_string());
+ }
+ 
+-pub async fn begin(peer_id: String, sender: mpsc::UnboundedSender<Data>) -> ResultType<Option<Lease>> {
++pub async fn begin(peer_id: String, is_remote: bool, is_file_transfer: bool, sender: mpsc::UnboundedSender<Data>) -> ResultType<Option<Lease>> {
+     if crate::get_app_name() != "ForlanDestek" {
+         return Ok(None);
+     }
+     let certificate = reqwest::Certificate::from_pem(include_bytes!("../deploy/forlan-support/support-ca.crt"))?;
+     let client = reqwest::Client::builder().use_rustls_tls().add_root_certificate(certificate).timeout(Duration::from_secs(12)).build()?;
+-    let request = LeaseRequest { device_id: Config::get_id(), session_id: uuid::Uuid::new_v4().to_string(), peer_id };
+-    let permit = refresh(&client, &request).await?;
+-    crate::flutter::push_global_event(crate::flutter::APP_TYPE_MAIN, serde_json::json!({"name":"forlan-policy-state","session_id":request.session_id,"premium":permit.premium,"expires":permit.connection_expires,"active":true}).to_string());
+-    if !permit.premium {
+-        policy_message("Lisanssız bağlantı: en fazla 5 dakika. Süre dolduğunda 1 dakika ara verilir.");
++    let parent = if is_file_transfer {
++        REMOTE_PARENTS.lock().unwrap().get(&peer_id).and_then(Weak::upgrade).filter(|parent| parent.active.load(Ordering::Acquire))
++    } else { None };
++    let token = parent.as_ref().map(|parent| parent.token.clone()).unwrap_or_else(|| SUPPORT_TOKEN.lock().unwrap().clone());
++    let request = LeaseRequest { device_id: Config::get_id(), session_id: uuid::Uuid::new_v4().to_string(), peer_id, parent_session_id: parent.as_ref().map(|parent| parent.request.session_id.clone()) };
++    let permit = refresh(&client, &request, &token).await?;
++    let is_parent = parent.is_none();
++    let group = parent.unwrap_or_else(|| Arc::new(PolicyGroup {
++        request: request.clone(), token, quota: crate::forlan_transfer::Quota::new(permit.premium), active: AtomicBool::new(true), expires: AtomicU64::new(permit.connection_expires), channels: Mutex::new(HashMap::new())
++    }));
++    if !group.active.load(Ordering::Acquire) { hbb_common::bail!("Ana bağlantı kapandı; dosya aktarımı başlatılamadı."); }
++    group.channels.lock().unwrap().insert(request.session_id.clone(), sender.clone());
++    if is_remote { REMOTE_PARENTS.lock().unwrap().insert(request.peer_id.clone(), Arc::downgrade(&group)); }
++    group.publish();
++    if !permit.premium && is_parent {
++        policy_message("Lisanssız bağlantı: en fazla 5 dakika ve toplam 30 MB dosya gönderimi. Süre dolduğunda 1 dakika ara verilir.");
+     }
+     let (cancel, mut cancellation) = oneshot::channel();
+     let monitor_client = client.clone();
+     let monitor_request = request.clone();
++    let monitor_group = group.clone();
+     tokio::spawn(async move {
+         let mut permit = permit;
+         let mut next_refresh = tokio::time::Instant::now() + Duration::from_secs(30);
+@@ -126,6 +167,7 @@
+             tokio::select! {
+                 _ = &mut cancellation => break,
+                 _ = tokio::time::sleep(Duration::from_secs(1)) => {
++                    if !monitor_group.active.load(Ordering::Acquire) { let _ = sender.send(Data::Close); break; }
+                     match now() {
+                         Ok(time) if time >= permit.exp || time >= permit.connection_expires => {
+                             policy_message(if !permit.premium && time >= permit.connection_expires {"5 dakikalık kullanım süresi doldu. 1 dakika sonra tekrar bağlanabilirsiniz."} else {"Lisans sunucusuyla doğrulama yenilenemedi; bağlantı kapatıldı."});
+@@ -137,8 +179,13 @@
+                     }
+                     if tokio::time::Instant::now() >= next_refresh {
+                         let remaining = permit.exp.min(permit.connection_expires).saturating_sub(now().unwrap_or(u64::MAX)).max(1).min(12);
+-                        match tokio::time::timeout(Duration::from_secs(remaining), refresh(&monitor_client, &monitor_request)).await {
+-                            Ok(Ok(updated)) => permit = updated,
++                        match tokio::time::timeout(Duration::from_secs(remaining), refresh(&monitor_client, &monitor_request, &monitor_group.token)).await {
++                            Ok(Ok(updated)) => {
++                                monitor_group.quota.set_premium(updated.premium);
++                                monitor_group.expires.store(updated.connection_expires, Ordering::Release);
++                                monitor_group.publish();
++                                permit = updated;
++                            }
+                             Ok(Err(error)) => {
+                                 if error.is::<PolicyDenied>() {
+                                     policy_message(&error.to_string());
+@@ -155,13 +202,21 @@
+             }
+         }
+     });
+-    Ok(Some(Lease { request, client, cancel: Some(cancel) }))
++    Ok(Some(Lease { request, client, cancel: Some(cancel), group, is_parent }))
+ }
+ 
+ impl Lease {
+     pub async fn finish(mut self) {
+         if let Some(cancel) = self.cancel.take() { let _ = cancel.send(()); }
+-        crate::flutter::push_global_event(crate::flutter::APP_TYPE_MAIN, serde_json::json!({"name":"forlan-policy-state","session_id":self.request.session_id,"active":false}).to_string());
++        self.group.channels.lock().unwrap().remove(&self.request.session_id);
++        if self.is_parent {
++            self.group.active.store(false, Ordering::Release);
++            for sender in self.group.channels.lock().unwrap().values() { let _ = sender.send(Data::Close); }
++            let mut parents = REMOTE_PARENTS.lock().unwrap();
++            if parents.get(&self.request.peer_id).and_then(Weak::upgrade).map_or(false, |parent| Arc::ptr_eq(&parent, &self.group)) { parents.remove(&self.request.peer_id); }
++            drop(parents);
++            self.group.publish();
++        } else { self.group.publish(); }
+         if let Err(error) = self.client.post(format!("{}/api/connections/{}/end",endpoint(),self.request.session_id)).send().await {
+             hbb_common::throttled_log!(Duration::from_secs(30), warn, "Forlan connection lease end failed: {error}");
+         }
+--- before/src\lib.rs
++++ after/src\lib.rs
+@@ -48,6 +48,8 @@
+ mod forlan_server;
+ #[cfg(all(windows, feature = "flutter"))]
+ mod forlan_policy;
++#[cfg(all(windows, feature = "flutter"))]
++mod forlan_transfer;
+ mod lang;
+ #[cfg(not(any(target_os = "android", target_os = "ios")))]
+ mod port_forward;
+--- before/src\platform\windows_forlan_notifications.rs
++++ after/src\platform\windows_forlan_notifications.rs
+@@ -93,7 +93,6 @@
+ fn play_sound(kind: &str) -> ResultType<()> {
+     let file = match kind {
+         "message" => "forlan-message.wav",
+-        "connection" => "forlan-connection.wav",
+         "" => return Ok(()),
+         _ => hbb_common::bail!("Unknown notification sound"),
+     };
+--- before/src\ui_session_interface.rs
++++ after/src\ui_session_interface.rs
+@@ -1961,7 +1961,7 @@
+     let (sender, mut receiver) = mpsc::unbounded_channel::<Data>();
+     *handler.sender.write().unwrap() = Some(sender.clone());
+     #[cfg(all(windows, feature = "flutter"))]
+-    let forlan_lease = match crate::forlan_policy::begin(handler.get_id(), sender.clone()).await {
++    let forlan_lease = match crate::forlan_policy::begin(handler.get_id(), handler.is_default(), handler.is_file_transfer(), sender.clone()).await {
+         Ok(lease) => lease,
+         Err(error) => { handler.on_error(&format!("Bağlantı başlatılamadı: {error}")); return; }
+     };
+@@ -2057,6 +2057,8 @@
+         return;
+     }
+     let mut remote = Remote::new(handler, receiver, sender);
++    #[cfg(all(windows, feature = "flutter"))]
++    remote.set_forlan_policy(forlan_lease.as_ref().map(|lease| lease.group.clone()));
+     remote.io_loop(&key, &token, round).await;
+     let _ = remote.sync_jobs_status_to_local().await;
+     #[cfg(all(windows, feature = "flutter"))]
+--- before/src\version.rs
++++ after/src\version.rs
+@@ -1,3 +1,3 @@
+-pub const VERSION: &str = "1.15.0";
++pub const VERSION: &str = "1.16.0";
+ #[allow(dead_code)]
+-pub const BUILD_DATE: &str = "2026-10-11 11:28";
++pub const BUILD_DATE: &str = "2026-10-12 09:27";

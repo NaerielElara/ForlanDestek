@@ -1,0 +1,13 @@
+{
+  "Cargo.toml": "90a0c897854027ae30731f6882facba5c7cdca9e5a25273b72097cc59db9a2c9",
+  "Cargo.lock": "a470abb4dd61a76087b9f6e61d19b8f880cba439e0550f213a40ffda3fe47f22",
+  "src/core_main.rs": "9d67c5f0977bb1525dcee92a0a6579a429a01be26ddb4dbc1e0c169a846ccc53",
+  "src/platform/windows.rs": "8344426ea6c114214cd2f7c9c028f18c3d55a819efa5236471d69c84fb9943e2",
+  "src/platform/windows/forlan_reset.rs": "cb91bcf3aa2060c08630de34853e57a2ea3ebb50eb473285b601667dfcf3a58d",
+  "src/platform/windows/forlan_reset_files.rs": "dc16f5f3ecb8338a4d81e1d4d66a9c72a95491b49130fa1a357cd7a99f6f862b",
+  "libs/portable/Cargo.toml": "ed74f15ff3f093b1fb52ae77de482a3fb1167c912f82201514598ef501f428b3",
+  "libs/portable/src/main.rs": "9a3268f790e3b988af25c0d6798855b228128852484ff687e0d46ab510b9d222",
+  "libs/portable/src/forlan_refresh.rs": "c413f6f527d66c58e7d34ff422904a738b4cdf87ebb5cbfef476713029819ca3",
+  "flutter/pubspec.yaml": "e27f1b1dcaa103eda117028c1ba10a7d75a107779f76ffa8cfefd4d09406c6f4",
+  "build.py": "0c550393c5b10d57a0ff70fd5ea9b80d570c5bddce0fcb4925a63a3b1caeb5d1"
+}

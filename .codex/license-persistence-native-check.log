@@ -1,0 +1,161 @@
+warning: patch for the non root package will be ignored, specify patch at the workspace root:
+package:   D:\D\Fordeskgpt\libs\hbb_common\Cargo.toml
+workspace: D:\D\Fordeskgpt\Cargo.toml
+warning: use of deprecated associated function `core::num::<impl u32>::max_value`: replaced by the `MAX` associated constant on this type
+   --> libs\hbb_common\src\lib.rs:192:41
+    |
+192 |         let tm = (number >> 17) & (u32::max_value() as u128);
+    |                                         ^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> libs\hbb_common\src\lib.rs:365:22
+    |
+365 |                     .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
+    |                      ^^^^^^^^^^^^
+    |
+help: replace the use of the deprecated method
+    |
+365 -                     .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
+365 +                     .try_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
+    |
+
+warning: `hbb_common` (lib) generated 2 warnings (run `cargo fix --lib -p hbb_common` to apply 1 suggestion)
+warning: `hbb_common` (lib) generated 2 warnings (2 duplicates)
+warning: linker stdout: LINK : warning LNK4098: defaultlib 'LIBCMTD' diğer kitaplıkların kullanımı ile çakışıyor; /NODEFAULTLIB:library kullanın
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `rustdesk` (build script) generated 1 warning
+    Checking rustdesk v1.17.0 (D:\D\Fordeskgpt)
+warning: unused import: `is_installed`
+  --> src\common.rs:40:69
+   |
+40 |     ui_interface::{get_api_server as ui_get_api_server, get_option, is_installed, set_option},
+   |                                                                     ^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `bail`
+  --> src\ui_cm_interface.rs:23:16
+   |
+23 |     allow_err, bail,
+   |                ^^^^
+
+warning: use of deprecated function `hbb_common::base64::encode`: Use Engine::encode
+   --> src\hbbs_http\sync.rs:188:52
+    |
+188 |                         hash = hbb_common::base64::encode(&res[..]);
+    |                                                    ^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+  --> src\rendezvous_mediator.rs:83:14
+   |
+83 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+   |              ^^^^^^^^^^^^
+   |
+help: replace the use of the deprecated method
+   |
+83 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+83 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+   |
+
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> src\rendezvous_mediator.rs:131:14
+    |
+131 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+    |              ^^^^^^^^^^^^
+    |
+help: replace the use of the deprecated method
+    |
+131 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+131 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+    |
+
+warning: variable does not need to be mutable
+   --> src\server\terminal_helper.rs:846:9
+    |
+846 |     let mut input_pipe = open_pipe(input_pipe_name, true)?;
+    |         ----^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> src\server\terminal_helper.rs:847:9
+    |
+847 |     let mut output_pipe = open_pipe(output_pipe_name, false)?;
+    |         ----^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> src\flutter_ffi.rs:1080:9
+     |
+1080 |     let mut map: HashMap<String, String> = serde_json::from_str(&json).unwrap_or(HashMap::new());
+     |         ----^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+  --> src\tray.rs:64:9
+   |
+64 |     let mut event_loop = EventLoopBuilder::new().build();
+   |         ----^^^^^^^^^^
+   |         |
+   |         help: remove this `mut`
+
+warning: constant `MOUSE_MOVE_PROTECTION_TIMEOUT` is never used
+   --> src\server\input_service.rs:633:7
+    |
+633 | const MOUSE_MOVE_PROTECTION_TIMEOUT: Duration = Duration::from_millis(1_000);
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: constant `MOUSE_ACTIVE_DISTANCE` is never used
+   --> src\server\input_service.rs:635:7
+    |
+635 | const MOUSE_ACTIVE_DISTANCE: i32 = 5;
+    |       ^^^^^^^^^^^^^^^^^^^^^
+
+warning: type alias `Children` is never used
+  --> src\ui_interface.rs:36:10
+   |
+36 | pub type Children = Arc<Mutex<(bool, HashMap<(String, String), Child>)>>;
+   |          ^^^^^^^^
+
+warning: method `message` is never used
+    --> src\ui_interface.rs:1070:12
+     |
+1069 | impl DeployResult {
+     | ----------------- method in this implementation
+1070 |     pub fn message(&self) -> String {
+     |            ^^^^^^^
+
+warning: function `create_http_client_async_with_url` is never used
+   --> src\hbbs_http\http_client.rs:260:14
+    |
+260 | pub async fn create_http_client_async_with_url(url: &str) -> AsyncClient {
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: module `pt_BR` should have a snake case name
+  --> src\lang.rs:36:5
+   |
+36 | mod pt_BR;
+   |     ^^^^^ help: convert the identifier to snake case: `pt_br`
+   |
+   = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: module `pt_PT` should have a snake case name
+  --> src\lang.rs:37:5
+   |
+37 | mod pt_PT;
+   |     ^^^^^ help: convert the identifier to snake case: `pt_pt`
+
+warning: `rustdesk` (lib) generated 16 warnings (run `cargo fix --lib -p rustdesk` to apply 8 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 31.95s

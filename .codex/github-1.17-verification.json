@@ -1,0 +1,16 @@
+{
+  "latest": "1.17.0",
+  "published": "2026-10-12T17:09:48Z",
+  "releaseCount": 1,
+  "tagCount": 1,
+  "mainFiles": [
+    "Bilgi",
+    "README.md"
+  ],
+  "binary": "ForlanDestek-1.17.0-portable.exe",
+  "bytes": 26262016,
+  "githubDigest": "sha256:390f25ee3fe8310c001b0117dc65636b9d9a37e8d2df525f25632b28fdd5cf4c",
+  "downloadHash": "390f25ee3fe8310c001b0117dc65636b9d9a37e8d2df525f25632b28fdd5cf4c",
+  "releaseUrl": "https://github.com/NaerielElara/ForlanDestek/releases/tag/1.17.0",
+  "downloadVerified": true
+}
